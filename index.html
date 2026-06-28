@@ -258,13 +258,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         <div class="t2">Secure Employee Access Portal</div>
       </div>
     </div>
-    <h2>Welcome back</h2>
-    <p>Sign in to access the payroll dashboard</p>
-    <div class="fg"><label>Username</label><input id="l-user" type="text" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <div class="fg"><label>Password</label><input id="l-pass" type="password" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <div class="login-err" id="l-err"></div>
-    <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:16px">Protected system — authorized users only</p>
+    <h2>Welcome</h2>
+    <p>Click below to access the Timekeeping Monitoring Dashboard</p>
+    <button class="login-btn" onclick="doLogin()">Access Dashboard →</button>
   </div>
 </div>
 
@@ -650,27 +646,14 @@ let pendingDelId=null;
 
 // ── AUTH ──────────────────────────────────────────────────────────────
 function doLogin(){
-  const u=document.getElementById('l-user').value.trim();
-  const p=document.getElementById('l-pass').value;
-  const err=document.getElementById('l-err');
-  if(u===CREDS.username&&p===CREDS.password){
-    err.textContent='';
-    document.getElementById('login-screen').classList.remove('active');
-    document.getElementById('dashboard-screen').classList.add('active');
-    populateYearDropdown();renderDash();renderInclusion();
-    toast('Welcome back, Admin!','success');
-  } else {
-    err.textContent='Invalid username or password.';
-    document.getElementById('l-pass').value='';
-    document.getElementById('l-pass').focus();
-  }
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('dashboard-screen').classList.add('active');
+  populateYearDropdown();renderDash();renderInclusion();
+  toast('Welcome!','success');
 }
 function doLogout(){
   document.getElementById('dashboard-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
-  document.getElementById('l-user').value='';
-  document.getElementById('l-pass').value='';
-  document.getElementById('l-err').textContent='';
   showPage('home');
 }
 

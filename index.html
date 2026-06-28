@@ -1805,7 +1805,7 @@ const OT_COL_KEYWORDS={
   cc:       ['cost center','costcenter','cost ctr','cost_center','costctr'],
   reg:      ['reghrs','reg hrs','reg hours','regular hours','basichrs','basic hrs','basic hours','ordinary hours'],
   rgot:     ['rgot','rg ot','reg ot'],
-  abshours: ['abshours','abs hours','absence hours','absent hours'],
+  abshours: ['abshrs','abshours','abs hrs','abs hours','absence hrs','absence hours','absent hours'],
   ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours']
 };
 
@@ -1813,7 +1813,7 @@ function otDetectCol(header){
   const h=(header||'').toString().toLowerCase().trim().replace(/[\r\n\t]+/g,' ');
   // Exact-match first for short ambiguous tokens
   if(h==='rgot'||h==='rg ot')return 'rgot';
-  if(h==='abshours'||h==='abs hours')return 'abshours';
+  if(h==='abshrs'||h==='abshours'||h==='abs hrs'||h==='abs hours')return 'abshours';
   if(h==='mi'||h==='m.i.'||h==='m.i')return 'mi';
   if(h==='cc')return 'cc';
   for(const[key,kws]of Object.entries(OT_COL_KEYWORDS)){

@@ -1797,19 +1797,53 @@ function otHandleFile(file){
 
 // ── Column fuzzy detection ────────────────────────────────────────────
 const OT_COL_KEYWORDS={
-  name:  ['employee name','employee','emp name','name','personnel','staff'],
-  dept:  ['department','dept','division','div'],
-  cc:    ['cost center','costcenter','cost ctr','cost_center','cc','center'],
-  reg:   ['regular hours','reg hrs','reg hours','regular','basic hrs','basic hours','ordinary'],
-  ot:    ['overtime hours','overtime','ot hours','ot hrs','over time','extra hours','ot']
+  lname:    ['lastname','last name','lname','surname','apelyido'],
+  fname:    ['firstname','first name','fname','given name','pangalan'],
+  mi:       ['mi','m.i.','middle initial','middle name','mname','m.i','mid init'],
+  name:     ['employee name','emp name','empname','personnel','staff'],
+  dept:     ['department','dept','division','div'],
+  cc:       ['cost center','costcenter','cost ctr','cost_center','costctr'],
+  reg:      ['reghrs','reg hrs','reg hours','regular hours','basichrs','basic hrs','basic hours','ordinary hours'],
+  rgot:     ['rgot','rg ot','reg ot'],
+  abshours: ['abshours','abs hours','absence hours','absent hours'],
+  ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours']
 };
 
 function otDetectCol(header){
-  const h=(header||'').toString().toLowerCase().trim().replace(/[\r\n]+/g,' ');
+  const h=(header||'').toString().toLowerCase().trim().replace(/[\r\n\t]+/g,' ');
+  // Exact-match first for short ambiguous tokens
+  if(h==='rgot'||h==='rg ot')return 'rgot';
+  if(h==='abshours'||h==='abs hours')return 'abshours';
+  if(h==='mi'||h==='m.i.'||h==='m.i')return 'mi';
+  if(h==='cc')return 'cc';
   for(const[key,kws]of Object.entries(OT_COL_KEYWORDS)){
     if(kws.some(kw=>h===kw||h.includes(kw)))return key;
   }
   return null;
+}
+
+function otBuildName(row,colMap){
+  // Split-name format: LASTNAME, FIRSTNAME MI
+  const lname=(colMap.lname!=null?row[colMap.lname]:'').toString().trim();
+  const fname=(colMap.fname!=null?row[colMap.fname]:'').toString().trim();
+  const mi   =(colMap.mi   !=null?row[colMap.mi]   :'').toString().trim();
+  if(lname||fname){
+    const full=[lname,(fname+(mi?' '+mi:'')).trim()].filter(Boolean).join(', ');
+    return full.toUpperCase();
+  }
+  // Fallback: single name column
+  return (colMap.name!=null?row[colMap.name]:'').toString().trim().toUpperCase();
+}
+
+function otCalcOT(row,colMap){
+  // Sum every column from RGOT index up to (not including) ABSHOURS index
+  if(colMap.rgot!=null&&colMap.abshours!=null&&colMap.abshours>colMap.rgot){
+    let sum=0;
+    for(let ci=colMap.rgot;ci<colMap.abshours;ci++) sum+=parseFloat(row[ci])||0;
+    return round2(sum);
+  }
+  // Fallback: single OT column
+  return round2(parseFloat(colMap.ot!=null?row[colMap.ot]:0)||0);
 }
 
 function otParseWorkbook(buffer,fileName){
@@ -1820,18 +1854,23 @@ function otParseWorkbook(buffer,fileName){
     if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
 
     // Find header row: first row where ≥2 cells match known keywords
-    let headerRowIdx=-1,colMap={};
-    for(let r=0;r<Math.min(raw.length,25);r++){
+    // Also store ALL column indices per key (for range detection)
+    let headerRowIdx=-1,colMap={},otColNames=[];
+    for(let r=0;r<Math.min(raw.length,30);r++){
       const row=raw[r];
       const detected={};
+      const names=[];
       row.forEach((cell,ci)=>{
         const k=otDetectCol(cell);
         if(k&&!(k in detected))detected[k]=ci;
+        names[ci]=(cell||'').toString().trim();
       });
-      if(Object.keys(detected).length>=2){headerRowIdx=r;colMap=detected;break;}
+      if(Object.keys(detected).length>=2){
+        headerRowIdx=r;colMap=detected;otColNames=names;break;
+      }
     }
     if(headerRowIdx===-1){
-      toast('Could not detect header row. Ensure the spreadsheet has columns for Employee Name, Regular Hours, and OT Hours.','error');
+      toast('Could not detect header row. Ensure the spreadsheet has columns for employee name, regular hours, RGOT, and ABSHOURS.','error');
       return;
     }
 
@@ -1839,38 +1878,48 @@ function otParseWorkbook(buffer,fileName){
     const employees=[];
     for(let r=headerRowIdx+1;r<raw.length;r++){
       const row=raw[r];
-      const name=(colMap.name!=null?row[colMap.name]:'').toString().trim().toUpperCase();
-      if(!name||name.startsWith('TOTAL')||name.startsWith('GRAND'))continue;
+      const name=otBuildName(row,colMap);
+      if(!name||name.startsWith('TOTAL')||name.startsWith('GRAND')||name.startsWith('SUB-TOTAL'))continue;
       const dept=(colMap.dept!=null?row[colMap.dept]:'').toString().trim();
-      const cc=(colMap.cc!=null?row[colMap.cc]:'').toString().trim();
-      const regularHours=round2(parseFloat(colMap.reg!=null?row[colMap.reg]:0)||0);
-      const overtimeHours=round2(parseFloat(colMap.ot!=null?row[colMap.ot]:0)||0);
-      const totalHours=round2(regularHours+overtimeHours);
-      const otPercentage=totalHours>0?round2((overtimeHours/totalHours)*100):0;
+      const cc  =(colMap.cc  !=null?row[colMap.cc]  :'').toString().trim();
+      const regularHours =round2(parseFloat(colMap.reg!=null?row[colMap.reg]:0)||0);
+      const overtimeHours=otCalcOT(row,colMap);
+      const totalHours   =round2(regularHours+overtimeHours);
+      const otPercentage =totalHours>0?round2((overtimeHours/totalHours)*100):0;
       employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage});
     }
 
     if(!employees.length){toast('No employee data rows found after the header row.','error');return;}
 
-    otParsedData={fileName,employees,colMap};
-    otShowPreview(fileName,employees,colMap);
+    otParsedData={fileName,employees,colMap,otColNames};
+    otShowPreview(fileName,employees,colMap,otColNames);
   }catch(err){
     toast('Failed to parse file: '+err.message,'error');
     console.error(err);
   }
 }
 
-function otShowPreview(fileName,employees,colMap){
+function otShowPreview(fileName,employees,colMap,otColNames){
   document.getElementById('ot-preview-fname').textContent=fileName;
   document.getElementById('ot-preview-count').textContent=employees.length+' rows detected';
   document.getElementById('ot-preview-section').style.display='block';
 
-  const LABELS={name:'Employee Name',dept:'Department',cc:'Cost Center',reg:'Reg Hours',ot:'OT Hours'};
-  const chipHtml=Object.entries(LABELS).map(([k,label])=>{
-    const found=k in colMap;
-    return `<span class="ot-col-chip${found?'':' warn'}">${found?'✓ ':'! '}${label}</span>`;
-  }).join('');
-  document.getElementById('ot-col-map-display').innerHTML=chipHtml;
+  // Build column mapping chips
+  const hasName=('lname' in colMap)||('fname' in colMap)||('name' in colMap);
+  const hasOT  =('rgot' in colMap&&'abshours' in colMap)||('ot' in colMap);
+  const otRangeLabel=colMap.rgot!=null&&colMap.abshours!=null
+    ?`OT Cols (${otColNames[colMap.rgot]}→before ${otColNames[colMap.abshours]}, ${colMap.abshours-colMap.rgot} cols)`
+    :'OT Hours';
+  const chips=[
+    {ok:hasName,  label:'lname' in colMap||'fname' in colMap?'Name (LASTNAME+FIRSTNAME+MI)':'Employee Name'},
+    {ok:'dept' in colMap, label:'Department'},
+    {ok:'cc'   in colMap, label:'Cost Center'},
+    {ok:'reg'  in colMap, label:'Reg Hours'},
+    {ok:hasOT,            label:otRangeLabel},
+  ];
+  document.getElementById('ot-col-map-display').innerHTML=chips.map(c=>
+    `<span class="ot-col-chip${c.ok?'':' warn'}">${c.ok?'✓ ':'! '}${c.label}</span>`
+  ).join('');
 
   const tbody=document.getElementById('ot-preview-tbody');
   tbody.innerHTML=employees.slice(0,50).map((e,i)=>`

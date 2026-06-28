@@ -1804,7 +1804,7 @@ const OT_COL_KEYWORDS={
   name:     ['employee name','emp name','empname','personnel','staff'],
   dept:     ['department','dept','division','div'],
   cc:       ['cost center','costcenter','cost ctr','cost_center','costctr'],
-  reg:      ['reghrs','reg hrs','reg hours','regular hours','basichrs','basic hrs','basic hours','ordinary hours'],
+  reg:      ['reghrs','rghrs','reg hrs','reg hours','regular hours','basichrs','basic hrs','basic hours','ordinary hours'],
   rgot:     ['rgot','rg ot','reg ot'],
   abshours: ['abshrs','abshours','abs hrs','abs hours','absence hrs','absence hours','absent hours'],
   ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours']
@@ -1856,11 +1856,8 @@ function otParseWorkbook(buffer,fileName){
     const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
     if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
 
-    // Find header row: scan all rows, pick the one with the most keyword matches.
-    // If multiple rows tie, prefer the one that contains RGOT (the key OT marker).
-    // This handles sheets with several metadata/title rows above the real header.
-    let headerRowIdx=-1,colMap={},otColNames=[];
-    let bestCount=0,bestHasRgot=false;
+    // Pass 1: scan every row, record keyword matches and column names
+    const rowScans=[];
     for(let r=0;r<Math.min(raw.length,30);r++){
       const row=raw[r];
       const detected={};
@@ -1870,19 +1867,41 @@ function otParseWorkbook(buffer,fileName){
         if(k&&!(k in detected))detected[k]=ci;
         names[ci]=(cell||'').toString().trim();
       });
-      const count=Object.keys(detected).length;
+      rowScans[r]={detected,names,count:Object.keys(detected).length};
+    }
+
+    // Pass 2: pick best header row — most matches, prefer rows that have RGOT.
+    // Using "best row" (not "first row") handles sheets with metadata rows above
+    // the real header. Preferring RGOT rows handles two-row merged headers where
+    // the sub-header row (RGHRS/RGOT) has fewer total matches than the main row.
+    let headerRowIdx=-1,bestCount=0,bestHasRgot=false;
+    for(let r=0;r<rowScans.length;r++){
+      const {count,detected}=rowScans[r];
       if(count<2)continue;
       const hasRgot='rgot' in detected;
-      // Prefer: has RGOT > more matches > earlier row
       const better=(hasRgot&&!bestHasRgot)||(hasRgot===bestHasRgot&&count>bestCount);
-      if(better){
-        headerRowIdx=r;colMap=detected;otColNames=names;
-        bestCount=count;bestHasRgot=hasRgot;
-      }
+      if(better){headerRowIdx=r;bestCount=count;bestHasRgot=hasRgot;}
     }
     if(headerRowIdx===-1){
-      toast('Could not detect header row. Ensure the spreadsheet has columns for employee name, regular hours, RGOT, and ABSHRS.','error');
+      toast('Could not detect header row. Ensure the spreadsheet has RGOT, employee name, and hours columns.','error');
       return;
+    }
+
+    // Pass 3: build combined colMap by merging the best row + adjacent rows (±1).
+    // This handles two-row merged headers, e.g. row N has LAST NAME / ABSHOURS
+    // and row N+1 has RGHRS / RGOT as sub-headers under a merged "REGULAR HOURS" cell.
+    let colMap={...rowScans[headerRowIdx].detected};
+    let otColNames=[...rowScans[headerRowIdx].names];
+    for(let delta=-1;delta<=1;delta++){
+      if(delta===0)continue;
+      const nr=headerRowIdx+delta;
+      if(nr<0||nr>=rowScans.length)continue;
+      const adj=rowScans[nr];
+      if(!adj||adj.count<1)continue;
+      for(const[k,ci] of Object.entries(adj.detected)){
+        if(!(k in colMap))colMap[k]=ci;          // only add missing keys
+      }
+      adj.names.forEach((n,ci)=>{if(n&&!otColNames[ci])otColNames[ci]=n;});
     }
 
     // Debug: log what was detected

@@ -1839,13 +1839,16 @@ function otBuildName(row,colMap){
 }
 
 function otCalcOT(row,colMap){
-  // Sum every column from RGOT index up to (not including) ABSHOURS index
-  if(colMap.rgot!=null&&colMap.abshours!=null&&colMap.abshours>colMap.rgot){
-    let sum=0;
-    for(let ci=colMap.rgot;ci<colMap.abshours;ci++) sum+=parseFloat(row[ci])||0;
-    return round2(sum);
+  if(colMap.rgot!=null){
+    if(colMap.abshours!=null&&colMap.abshours>colMap.rgot){
+      // Sum every column from RGOT up to (not including) ABSHOURS
+      let sum=0;
+      for(let ci=colMap.rgot;ci<colMap.abshours;ci++) sum+=parseFloat(row[ci])||0;
+      return round2(sum);
+    }
+    // ABSHRS not found — use RGOT column value directly (don't silently return 0)
+    return round2(parseFloat(row[colMap.rgot])||0);
   }
-  // Fallback: single OT column
   return round2(parseFloat(colMap.ot!=null?row[colMap.ot]:0)||0);
 }
 
@@ -1856,63 +1859,51 @@ function otParseWorkbook(buffer,fileName){
     const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
     if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
 
-    // Pass 1: scan every row, record keyword matches and column names
-    const rowScans=[];
-    for(let r=0;r<Math.min(raw.length,30);r++){
-      const row=raw[r];
-      const detected={};
-      const names=[];
-      row.forEach((cell,ci)=>{
-        const k=otDetectCol(cell);
-        if(k&&!(k in detected))detected[k]=ci;
-        names[ci]=(cell||'').toString().trim();
-      });
-      rowScans[r]={detected,names,count:Object.keys(detected).length};
+    // Find RGOT and ABSHRS by scanning cell addresses directly — no keyword thresholds.
+    // This is reliable regardless of how many other headers are on the same row.
+    const sheetRange=XLSX.utils.decode_range(ws['!ref']||'A1');
+    let rgotRow=-1,rgotCol=-1,abshrsCol=-1;
+    outer:
+    for(let r=0;r<=Math.min(sheetRange.e.r,30);r++){
+      for(let c=0;c<=sheetRange.e.c;c++){
+        const cell=ws[XLSX.utils.encode_cell({r,c})];
+        if(!cell||cell.v==null)continue;
+        const v=cell.v.toString().trim().toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+        if(v==='rgot'&&rgotRow===-1){rgotRow=r;rgotCol=c;}
+        if((v==='abshours'||v==='abshrs'||v==='abs hrs'||v==='abs hours')&&abshrsCol===-1)abshrsCol=c;
+      }
+      // Stop once we've found RGOT and scanned that entire row
+      if(rgotRow!==-1&&r>rgotRow)break outer;
     }
-
-    // Pass 2: pick best header row — most matches, prefer rows that have RGOT.
-    // Using "best row" (not "first row") handles sheets with metadata rows above
-    // the real header. Preferring RGOT rows handles two-row merged headers where
-    // the sub-header row (RGHRS/RGOT) has fewer total matches than the main row.
-    let headerRowIdx=-1,bestCount=0,bestHasRgot=false;
-    for(let r=0;r<rowScans.length;r++){
-      const {count,detected}=rowScans[r];
-      if(count<2)continue;
-      const hasRgot='rgot' in detected;
-      const better=(hasRgot&&!bestHasRgot)||(hasRgot===bestHasRgot&&count>bestCount);
-      if(better){headerRowIdx=r;bestCount=count;bestHasRgot=hasRgot;}
-    }
-    if(headerRowIdx===-1){
-      toast('Could not detect header row. Ensure the spreadsheet has RGOT, employee name, and hours columns.','error');
+    if(rgotRow===-1){
+      toast('RGOT column not found. Make sure the spreadsheet has a header cell named "RGOT".','error');
       return;
     }
 
-    // Pass 3: build combined colMap by merging the best row + adjacent rows (±1).
-    // This handles two-row merged headers, e.g. row N has LAST NAME / ABSHOURS
-    // and row N+1 has RGHRS / RGOT as sub-headers under a merged "REGULAR HOURS" cell.
-    let colMap={...rowScans[headerRowIdx].detected};
-    let otColNames=[...rowScans[headerRowIdx].names];
-    for(let delta=-1;delta<=1;delta++){
-      if(delta===0)continue;
-      const nr=headerRowIdx+delta;
-      if(nr<0||nr>=rowScans.length)continue;
-      const adj=rowScans[nr];
-      if(!adj||adj.count<1)continue;
-      for(const[k,ci] of Object.entries(adj.detected)){
-        if(!(k in colMap))colMap[k]=ci;          // only add missing keys
-      }
-      adj.names.forEach((n,ci)=>{if(n&&!otColNames[ci])otColNames[ci]=n;});
+    // Build colMap anchored on RGOT; merge rows within ±2 for all other headers
+    // (handles split two-row merged headers — no adj.count guard needed)
+    const headerRowIdx=rgotRow;
+    const colMap={rgot:rgotCol};
+    if(abshrsCol!==-1)colMap.abshours=abshrsCol;
+    const otColNames=new Array(sheetRange.e.c+1).fill('');
+    for(let delta=-2;delta<=2;delta++){
+      const nr=rgotRow+delta;
+      if(nr<0||nr>=raw.length)continue;
+      raw[nr].forEach((cell,ci)=>{
+        const n=(cell||'').toString().trim();
+        if(n&&!otColNames[ci])otColNames[ci]=n;
+        const k=otDetectCol(n);
+        if(k&&!(k in colMap))colMap[k]=ci;
+      });
     }
 
-    // Debug: log what was detected
-    console.log('[OT] Header row index:', headerRowIdx);
-    console.log('[OT] All columns:', otColNames.map((n,i)=>i+':"'+n+'"').join(' | '));
-    console.log('[OT] colMap:', JSON.stringify(colMap));
-    if(colMap.rgot!=null&&colMap.abshours!=null){
-      console.log('[OT] OT range columns:', otColNames.slice(colMap.rgot,colMap.abshours).join(', '));
-    }else{
-      console.warn('[OT] OT range NOT set — rgot='+colMap.rgot+', abshours='+colMap.abshours);
-    }
+    // Debug output
+    console.log('[OT] RGOT found at row',rgotRow,'col',rgotCol,'| abshrsCol=',abshrsCol);
+    console.log('[OT] colMap:',JSON.stringify(colMap));
+    if(colMap.abshours!=null)
+      console.log('[OT] OT range:',otColNames.slice(colMap.rgot,colMap.abshours).join(', '));
+    else
+      console.warn('[OT] ABSHRS not found — will use RGOT column only');
 
     // Parse data rows
     const employees=[];
@@ -1961,17 +1952,18 @@ function otShowPreview(fileName,employees,colMap,otColNames,headerRowIdx){
     `<span class="ot-col-chip${c.ok?'':' warn'}">${c.ok?'✓ ':'! '}${c.label}</span>`
   ).join('');
 
-  // Debug panel
+  // Debug panel — shows exactly what the browser read from the file
   const dbg=document.getElementById('ot-debug-info');
   const dbLines=[];
-  dbLines.push(`Header row: ${(headerRowIdx||0)+1}`);
-  dbLines.push(`RGOT: ${colMap.rgot!=null?'col '+colMap.rgot+' = "'+otColNames[colMap.rgot]+'"':'NOT FOUND'}`);
-  dbLines.push(`ABSHRS: ${colMap.abshours!=null?'col '+colMap.abshours+' = "'+otColNames[colMap.abshours]+'"':'NOT FOUND'}`);
-  if(colMap.rgot!=null&&colMap.abshours!=null&&colMap.abshours>colMap.rgot){
-    dbLines.push(`Summing ${colMap.abshours-colMap.rgot} cols: `+otColNames.slice(colMap.rgot,colMap.abshours).map((n,i)=>(colMap.rgot+i)+':'+n).join(', '));
-  }else if(colMap.rgot!=null||colMap.abshours!=null){
-    dbLines.push('⚠ OT range incomplete — verify RGOT and ABSHRS headers exist in the file');
+  dbLines.push(`RGOT: ${colMap.rgot!=null?'col '+colMap.rgot+' = "'+otColNames[colMap.rgot]+'"':'NOT FOUND ⚠'}`);
+  if(colMap.abshours!=null&&colMap.rgot!=null&&colMap.abshours>colMap.rgot){
+    const sumCols=otColNames.slice(colMap.rgot,colMap.abshours).map((n,i)=>(colMap.rgot+i)+(n?':'+n:'')).join(', ');
+    dbLines.push(`OT range: ${colMap.abshours-colMap.rgot} col(s) → ${sumCols}`);
+  }else{
+    dbLines.push(`ABSHRS: ${colMap.abshours!=null?'col '+colMap.abshours:'NOT FOUND'} → using RGOT col only`);
   }
+  const rawCols=otColNames.map((n,i)=>n?i+':'+n:'').filter(Boolean).join('  ');
+  dbLines.push(`All cols seen: ${rawCols||'(none)'}`);
   dbg.innerHTML=dbLines.join('<br>');
   dbg.style.display='block';
 

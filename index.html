@@ -664,6 +664,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
               <span class="badge" id="ot-preview-count"></span>
             </div>
             <div class="ot-col-map" id="ot-col-map-display"></div>
+            <div id="ot-debug-info" style="margin:6px 0;padding:8px 10px;background:var(--bg3,#f3f4f6);border-radius:6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);display:none"></div>
             <div class="table-wrap" style="max-height:320px">
               <table>
                 <thead><tr>
@@ -1810,11 +1811,13 @@ const OT_COL_KEYWORDS={
 };
 
 function otDetectCol(header){
-  const h=(header||'').toString().toLowerCase().trim().replace(/[\r\n\t]+/g,' ');
+  // Normalize: lowercase, trim, collapse whitespace, strip non-alphanumeric except spaces
+  const raw=(header||'').toString().toLowerCase().trim().replace(/[\r\n\t]+/g,' ');
+  const h=raw.replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
   // Exact-match first for short ambiguous tokens
   if(h==='rgot'||h==='rg ot')return 'rgot';
   if(h==='abshrs'||h==='abshours'||h==='abs hrs'||h==='abs hours')return 'abshours';
-  if(h==='mi'||h==='m.i.'||h==='m.i')return 'mi';
+  if(h==='mi')return 'mi';
   if(h==='cc')return 'cc';
   for(const[key,kws]of Object.entries(OT_COL_KEYWORDS)){
     if(kws.some(kw=>h===kw||h.includes(kw)))return key;
@@ -1874,6 +1877,16 @@ function otParseWorkbook(buffer,fileName){
       return;
     }
 
+    // Debug: log what was detected
+    console.log('[OT] Header row index:', headerRowIdx);
+    console.log('[OT] All columns:', otColNames.map((n,i)=>i+':"'+n+'"').join(' | '));
+    console.log('[OT] colMap:', JSON.stringify(colMap));
+    if(colMap.rgot!=null&&colMap.abshours!=null){
+      console.log('[OT] OT range columns:', otColNames.slice(colMap.rgot,colMap.abshours).join(', '));
+    }else{
+      console.warn('[OT] OT range NOT set — rgot='+colMap.rgot+', abshours='+colMap.abshours);
+    }
+
     // Parse data rows
     const employees=[];
     for(let r=headerRowIdx+1;r<raw.length;r++){
@@ -1891,15 +1904,15 @@ function otParseWorkbook(buffer,fileName){
 
     if(!employees.length){toast('No employee data rows found after the header row.','error');return;}
 
-    otParsedData={fileName,employees,colMap,otColNames};
-    otShowPreview(fileName,employees,colMap,otColNames);
+    otParsedData={fileName,employees,colMap,otColNames,headerRowIdx};
+    otShowPreview(fileName,employees,colMap,otColNames,headerRowIdx);
   }catch(err){
     toast('Failed to parse file: '+err.message,'error');
     console.error(err);
   }
 }
 
-function otShowPreview(fileName,employees,colMap,otColNames){
+function otShowPreview(fileName,employees,colMap,otColNames,headerRowIdx){
   document.getElementById('ot-preview-fname').textContent=fileName;
   document.getElementById('ot-preview-count').textContent=employees.length+' rows detected';
   document.getElementById('ot-preview-section').style.display='block';
@@ -1920,6 +1933,20 @@ function otShowPreview(fileName,employees,colMap,otColNames){
   document.getElementById('ot-col-map-display').innerHTML=chips.map(c=>
     `<span class="ot-col-chip${c.ok?'':' warn'}">${c.ok?'✓ ':'! '}${c.label}</span>`
   ).join('');
+
+  // Debug panel
+  const dbg=document.getElementById('ot-debug-info');
+  const dbLines=[];
+  dbLines.push(`Header row: ${(headerRowIdx||0)+1}`);
+  dbLines.push(`RGOT: ${colMap.rgot!=null?'col '+colMap.rgot+' = "'+otColNames[colMap.rgot]+'"':'NOT FOUND'}`);
+  dbLines.push(`ABSHRS: ${colMap.abshours!=null?'col '+colMap.abshours+' = "'+otColNames[colMap.abshours]+'"':'NOT FOUND'}`);
+  if(colMap.rgot!=null&&colMap.abshours!=null&&colMap.abshours>colMap.rgot){
+    dbLines.push(`Summing ${colMap.abshours-colMap.rgot} cols: `+otColNames.slice(colMap.rgot,colMap.abshours).map((n,i)=>(colMap.rgot+i)+':'+n).join(', '));
+  }else if(colMap.rgot!=null||colMap.abshours!=null){
+    dbLines.push('⚠ OT range incomplete — verify RGOT and ABSHRS headers exist in the file');
+  }
+  dbg.innerHTML=dbLines.join('<br>');
+  dbg.style.display='block';
 
   const tbody=document.getElementById('ot-preview-tbody');
   tbody.innerHTML=employees.slice(0,50).map((e,i)=>`

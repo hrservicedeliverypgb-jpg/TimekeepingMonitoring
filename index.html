@@ -1856,9 +1856,11 @@ function otParseWorkbook(buffer,fileName){
     const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
     if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
 
-    // Find header row: first row where ≥2 cells match known keywords
-    // Also store ALL column indices per key (for range detection)
+    // Find header row: scan all rows, pick the one with the most keyword matches.
+    // If multiple rows tie, prefer the one that contains RGOT (the key OT marker).
+    // This handles sheets with several metadata/title rows above the real header.
     let headerRowIdx=-1,colMap={},otColNames=[];
+    let bestCount=0,bestHasRgot=false;
     for(let r=0;r<Math.min(raw.length,30);r++){
       const row=raw[r];
       const detected={};
@@ -1868,12 +1870,18 @@ function otParseWorkbook(buffer,fileName){
         if(k&&!(k in detected))detected[k]=ci;
         names[ci]=(cell||'').toString().trim();
       });
-      if(Object.keys(detected).length>=2){
-        headerRowIdx=r;colMap=detected;otColNames=names;break;
+      const count=Object.keys(detected).length;
+      if(count<2)continue;
+      const hasRgot='rgot' in detected;
+      // Prefer: has RGOT > more matches > earlier row
+      const better=(hasRgot&&!bestHasRgot)||(hasRgot===bestHasRgot&&count>bestCount);
+      if(better){
+        headerRowIdx=r;colMap=detected;otColNames=names;
+        bestCount=count;bestHasRgot=hasRgot;
       }
     }
     if(headerRowIdx===-1){
-      toast('Could not detect header row. Ensure the spreadsheet has columns for employee name, regular hours, RGOT, and ABSHOURS.','error');
+      toast('Could not detect header row. Ensure the spreadsheet has columns for employee name, regular hours, RGOT, and ABSHRS.','error');
       return;
     }
 

@@ -10,6 +10,7 @@
 <title>PGB Timekeeping Monitoring Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -242,6 +243,54 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 
 .chart-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:0}
 @media(max-width:900px){.chart-two-col{grid-template-columns:1fr}}
+
+/* ── OVERTIME MONITORING ──────────────────────────────────── */
+.ot-sub-nav{display:flex;align-items:center;gap:4px;background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:6px 10px;box-shadow:var(--shadow);margin-bottom:18px;flex-wrap:wrap}
+.ot-sub-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:'DM Sans',sans-serif;transition:background .15s,color .15s;white-space:nowrap}
+.ot-sub-btn:hover{background:var(--off2);color:var(--text)}
+.ot-sub-btn.active{background:var(--navy);color:white}
+.ot-sub-btn svg{width:13px;height:13px;fill:currentColor;flex-shrink:0}
+.ot-upload-zone{border:2px dashed var(--border);border-radius:var(--r-lg);padding:40px 20px;text-align:center;background:var(--white);cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:18px}
+.ot-upload-zone:hover,.ot-upload-zone.drag-over{border-color:var(--sky);background:var(--sky-light)}
+.ot-upload-zone svg{width:40px;height:40px;fill:var(--text3);margin-bottom:12px}
+.ot-upload-zone .uz-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ot-upload-zone .uz-sub{font-size:12px;color:var(--text3)}
+.ot-meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.ot-preview-wrap{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+.ot-preview-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.ot-preview-hdr h3{font-size:13px;font-weight:700;color:var(--text)}
+.ot-col-map{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--off2);font-size:11px}
+.ot-col-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;background:var(--green-bg);color:var(--green);font-weight:700;border:1px solid #a7f3d0}
+.ot-col-chip.warn{background:#fef9c3;color:#92400e;border-color:#fde68a}
+.ot-import-card{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:12px;display:flex;align-items:flex-start;gap:14px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.ot-import-card:hover{box-shadow:var(--shadow-md);border-color:var(--sky)}
+.ot-import-icon{width:42px;height:42px;border-radius:10px;background:var(--sky-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ot-import-icon svg{width:22px;height:22px;fill:var(--blue)}
+.ot-import-info{flex:1;min-width:0}
+.ot-import-info .oi-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.ot-import-info .oi-meta{font-size:11px;color:var(--text3)}
+.ot-import-stats{display:flex;gap:12px;flex-shrink:0;align-items:center}
+.ot-stat-chip{text-align:center;padding:6px 10px;border-radius:var(--r);background:var(--off);border:1px solid var(--border)}
+.ot-stat-chip .cs-val{font-size:14px;font-weight:800;font-family:'DM Mono',monospace;color:var(--navy)}
+.ot-stat-chip .cs-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--text3);margin-top:1px}
+.ot-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+.ot-kpi{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);padding:16px 18px;box-shadow:var(--shadow);border-top:3px solid var(--blue2)}
+.ot-kpi .kl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;color:var(--text2);margin-bottom:6px}
+.ot-kpi .kv{font-size:26px;font-weight:800;color:var(--navy);font-family:'DM Mono',monospace;line-height:1}
+.ot-kpi .ks{font-size:11px;color:var(--text3);margin-top:3px}
+.ot-kpi.gold{border-top-color:var(--gold)}.ot-kpi.gold .kv{color:var(--gold)}
+.ot-kpi.green{border-top-color:var(--green)}.ot-kpi.green .kv{color:var(--green)}
+.ot-kpi.sky{border-top-color:var(--sky)}.ot-kpi.sky .kv{color:var(--sky)}
+.ot-kpi.red{border-top-color:var(--red)}.ot-kpi.red .kv{color:var(--red)}
+.ot-filters{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end}
+.ot-filters select,.ot-filters input{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--r);font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);outline:none;transition:border-color .15s}
+.ot-filters select:focus,.ot-filters input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.ot-filters label{display:block;font-size:10.5px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.ot-bar-section{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:18px}
+.ot-bar-section h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+.ot-empty{text-align:center;padding:48px 24px;color:var(--text3)}
+.ot-empty svg{width:48px;height:48px;fill:var(--border);margin-bottom:14px}
+.ot-empty p{font-size:13px}
 </style>
 </head>
 <body>
@@ -258,13 +307,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         <div class="t2">Secure Employee Access Portal</div>
       </div>
     </div>
-    <h2>Welcome back</h2>
-    <p>Sign in to access the payroll dashboard</p>
-    <div class="fg"><label>Username</label><input id="l-user" type="text" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <div class="fg"><label>Password</label><input id="l-pass" type="password" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <div class="login-err" id="l-err"></div>
-    <button class="login-btn" onclick="doLogin()">Sign In →</button>
-    <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:16px">Protected system — authorized users only</p>
+    <h2>Welcome</h2>
+    <p>Click below to access the Timekeeping Monitoring Dashboard</p>
+    <button class="login-btn" onclick="doLogin()">Access Dashboard →</button>
   </div>
 </div>
 
@@ -289,6 +334,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
       </div>
       <div class="nav-item" onclick="showPage('report')" id="nav-report">
         <svg viewBox="0 0 24 24"><path d="M16 6l2.3 2.3-4.9 4.9-3-3L4 16.6l1.4 1.4 6-6.1 3 3L18.7 9l2.3 2.3V6z"/></svg> Reports &amp; Export
+      </div>
+      <div class="nav-item" onclick="showPage('overtime')" id="nav-overtime">
+        <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm4.24 16L12 15.45 7.77 18l1.12-4.81-3.73-3.23 4.92-.42L12 5l1.92 4.53 4.92.42-3.73 3.23L16.23 18z"/></svg> Overtime Monitoring
       </div>
     </div>
     <div class="header-right">
@@ -543,6 +591,199 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
       </div>
     </div>
 
+    <!-- OVERTIME MONITORING PAGE -->
+    <div class="page" id="page-overtime">
+      <div class="page-title">
+        <h1>Overtime Monitoring</h1>
+        <p>Upload, analyze, and track overtime hours by affiliate, department, and cost center</p>
+      </div>
+
+      <!-- Sub-navigation -->
+      <div class="ot-sub-nav">
+        <button class="ot-sub-btn active" onclick="otShowSub('upload')" id="otsub-upload">
+          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Upload
+        </button>
+        <button class="ot-sub-btn" onclick="otShowSub('exec')" id="otsub-exec">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Executive Dashboard
+        </button>
+        <button class="ot-sub-btn" onclick="otShowSub('dept')" id="otsub-dept">
+          <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg> Departments
+        </button>
+        <button class="ot-sub-btn" onclick="otShowSub('cc')" id="otsub-cc">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Cost Centers
+        </button>
+        <button class="ot-sub-btn" onclick="otShowSub('emp')" id="otsub-emp">
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> Employees
+        </button>
+        <button class="ot-sub-btn" onclick="otShowSub('hist')" id="otsub-hist">
+          <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 00-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0013 21a9 9 0 000-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg> Historical
+        </button>
+        <button class="ot-sub-btn" onclick="otShowSub('rpt')" id="otsub-rpt">
+          <svg viewBox="0 0 24 24"><path d="M16 6l2.3 2.3-4.9 4.9-3-3L4 16.6l1.4 1.4 6-6.1 3 3L18.7 9l2.3 2.3V6z"/></svg> Reports
+        </button>
+      </div>
+
+      <!-- UPLOAD SUB-PAGE -->
+      <div id="ot-sub-upload">
+        <div class="form-card">
+          <h3>Import Overtime Timesheet</h3>
+          <div class="ot-meta-grid">
+            <div class="fg" style="margin:0">
+              <label>Affiliate</label>
+              <select id="ot-up-aff"><option value="">— Select Affiliate —</option></select>
+            </div>
+            <div class="fg" style="margin:0">
+              <label>Period Label (e.g. June 1–15, 2025)</label>
+              <input id="ot-up-period" type="text" placeholder="e.g. June 1-15, 2025" autocomplete="off"/>
+            </div>
+            <div class="fg" style="margin:0">
+              <label>Period Start</label>
+              <input id="ot-up-start" type="date"/>
+            </div>
+            <div class="fg" style="margin:0">
+              <label>Period End</label>
+              <input id="ot-up-end" type="date"/>
+            </div>
+          </div>
+          <div class="ot-upload-zone" id="ot-dropzone" onclick="document.getElementById('ot-file-input').click()"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="otHandleDrop(event)">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM8 13h8v1.5H8V13zm0 3h8v1.5H8V16zm0-6h5v1.5H8V10z"/></svg>
+            <div class="uz-title">Drop your Excel timesheet here</div>
+            <div class="uz-sub">Supports .xls and .xlsx — click to browse</div>
+          </div>
+          <input type="file" id="ot-file-input" accept=".xls,.xlsx" style="display:none" onchange="otHandleFile(this.files[0])"/>
+        </div>
+
+        <!-- Preview area (hidden until file parsed) -->
+        <div id="ot-preview-section" style="display:none">
+          <div class="ot-preview-wrap">
+            <div class="ot-preview-hdr">
+              <h3>Preview — <span id="ot-preview-fname"></span></h3>
+              <span class="badge" id="ot-preview-count"></span>
+            </div>
+            <div class="ot-col-map" id="ot-col-map-display"></div>
+            <div class="table-wrap" style="max-height:320px">
+              <table>
+                <thead><tr>
+                  <th>#</th><th style="text-align:left">Employee Name</th><th>Department</th>
+                  <th>Cost Center</th><th>Reg Hrs</th><th>OT Hrs</th><th>Total Hrs</th><th>OT %</th>
+                </tr></thead>
+                <tbody id="ot-preview-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-secondary" onclick="otCancelUpload()">Cancel</button>
+            <button class="btn btn-primary" onclick="otSaveImport()">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:white"><path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm-5 16a3 3 0 110-6 3 3 0 010 6zm3-10H5V5h10v4z"/></svg>
+              Save Import
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXECUTIVE DASHBOARD SUB-PAGE -->
+      <div id="ot-sub-exec" style="display:none">
+        <div class="ot-filters">
+          <div><label>Affiliate</label><select id="ot-exec-aff" onchange="otRenderExec()"><option value="">All Affiliates</option></select></div>
+          <div><label>Period</label><select id="ot-exec-period" onchange="otRenderExec()"><option value="">All Periods</option></select></div>
+        </div>
+        <div class="ot-kpi-row" id="ot-exec-kpis"></div>
+        <div class="ot-bar-section"><h3>OT Hours by Affiliate</h3><div id="ot-exec-bar"></div></div>
+        <div class="ot-bar-section"><h3>OT % Rate by Affiliate</h3><div id="ot-exec-pct-bar"></div></div>
+      </div>
+
+      <!-- DEPARTMENTS SUB-PAGE -->
+      <div id="ot-sub-dept" style="display:none">
+        <div class="ot-filters">
+          <div><label>Affiliate</label><select id="ot-dept-aff" onchange="otRenderDept()"><option value="">All</option></select></div>
+          <div><label>Period</label><select id="ot-dept-period" onchange="otRenderDept()"><option value="">All</option></select></div>
+          <div><label>Search</label><input id="ot-dept-search" placeholder="Search department…" oninput="otRenderDept()"/></div>
+        </div>
+        <div class="ot-bar-section"><h3>OT Hours by Department</h3><div id="ot-dept-bar"></div></div>
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Department Detail</h3><span class="badge" id="ot-dept-count">0</span></div>
+          <div class="table-wrap"><table><thead><tr>
+            <th>#</th><th style="text-align:left">Department</th><th>Employees</th>
+            <th>Reg Hrs</th><th>OT Hrs</th><th>Total Hrs</th><th>OT %</th>
+          </tr></thead><tbody id="ot-dept-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- COST CENTERS SUB-PAGE -->
+      <div id="ot-sub-cc" style="display:none">
+        <div class="ot-filters">
+          <div><label>Affiliate</label><select id="ot-cc-aff" onchange="otRenderCC()"><option value="">All</option></select></div>
+          <div><label>Period</label><select id="ot-cc-period" onchange="otRenderCC()"><option value="">All</option></select></div>
+          <div><label>Search</label><input id="ot-cc-search" placeholder="Search cost center…" oninput="otRenderCC()"/></div>
+        </div>
+        <div class="ot-bar-section"><h3>OT Hours by Cost Center</h3><div id="ot-cc-bar"></div></div>
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Cost Center Detail</h3><span class="badge" id="ot-cc-count">0</span></div>
+          <div class="table-wrap"><table><thead><tr>
+            <th>#</th><th style="text-align:left">Cost Center</th><th>Employees</th>
+            <th>Reg Hrs</th><th>OT Hrs</th><th>Total Hrs</th><th>OT %</th>
+          </tr></thead><tbody id="ot-cc-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES SUB-PAGE -->
+      <div id="ot-sub-emp" style="display:none">
+        <div class="ot-filters">
+          <div><label>Affiliate</label><select id="ot-emp-aff" onchange="otRenderEmp()"><option value="">All</option></select></div>
+          <div><label>Period</label><select id="ot-emp-period" onchange="otRenderEmp()"><option value="">All</option></select></div>
+          <div><label>Department</label><select id="ot-emp-dept" onchange="otRenderEmp()"><option value="">All</option></select></div>
+          <div><label>Cost Center</label><select id="ot-emp-cc" onchange="otRenderEmp()"><option value="">All</option></select></div>
+          <div><label>Search</label><input id="ot-emp-search" placeholder="Search employee…" oninput="otRenderEmp()"/></div>
+        </div>
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Employee OT Detail</h3><span class="badge" id="ot-emp-count">0</span></div>
+          <div class="table-wrap"><table><thead><tr>
+            <th>#</th><th style="text-align:left">Employee Name</th><th>Department</th><th>Cost Center</th>
+            <th>Affiliate</th><th>Period</th><th>Reg Hrs</th><th>OT Hrs</th><th>Total Hrs</th><th>OT %</th>
+          </tr></thead><tbody id="ot-emp-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- HISTORICAL SUB-PAGE -->
+      <div id="ot-sub-hist" style="display:none">
+        <div class="ot-filters" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+          <div><label>Affiliate</label><select id="ot-hist-aff" onchange="otRenderHist()"><option value="">All</option></select></div>
+        </div>
+        <div id="ot-hist-list"></div>
+      </div>
+
+      <!-- REPORTS SUB-PAGE -->
+      <div id="ot-sub-rpt" style="display:none">
+        <div class="ot-filters">
+          <div><label>Affiliate</label><select id="ot-rpt-aff" onchange="otRenderRpt()"><option value="">All</option></select></div>
+          <div><label>Period</label><select id="ot-rpt-period" onchange="otRenderRpt()"><option value="">All</option></select></div>
+          <div><label>Department</label><select id="ot-rpt-dept" onchange="otRenderRpt()"><option value="">All</option></select></div>
+          <div><label>Cost Center</label><select id="ot-rpt-cc" onchange="otRenderRpt()"><option value="">All</option></select></div>
+          <div><label>Search</label><input id="ot-rpt-search" placeholder="Search employee…" oninput="otRenderRpt()"/></div>
+        </div>
+        <div class="ot-kpi-row" id="ot-rpt-kpis"></div>
+        <div class="table-card">
+          <div class="table-toolbar">
+            <h3>Report Results</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge" id="ot-rpt-count">—</span>
+              <button class="btn btn-green" onclick="otExportExcel()" style="font-size:11.5px;padding:6px 12px">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg> Export Excel
+              </button>
+            </div>
+          </div>
+          <div class="table-wrap"><table><thead><tr>
+            <th>#</th><th style="text-align:left">Employee Name</th><th>Department</th><th>Cost Center</th>
+            <th>Affiliate</th><th>Period</th><th>Reg Hrs</th><th>OT Hrs</th><th>Total Hrs</th><th>OT %</th>
+          </tr></thead><tbody id="ot-rpt-tbody"><tr class="empty-row"><td colspan="10">Use the filters above to view data.</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+    </div><!-- end #page-overtime -->
+
   </div>
 </div>
 
@@ -554,6 +795,18 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
       <button class="btn btn-danger" id="confirm-del">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- OT DUPLICATE MODAL -->
+<div class="modal-overlay" id="ot-dup-modal">
+  <div class="modal" style="max-width:440px">
+    <h3>Duplicate Import Detected</h3>
+    <p id="ot-dup-msg">An import for this Affiliate and Period already exists. Do you want to replace it?</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="otDupCancel()">Cancel</button>
+      <button class="btn btn-danger" onclick="otDupReplace()">Replace Existing Data</button>
     </div>
   </div>
 </div>
@@ -650,27 +903,14 @@ let pendingDelId=null;
 
 // ── AUTH ──────────────────────────────────────────────────────────────
 function doLogin(){
-  const u=document.getElementById('l-user').value.trim();
-  const p=document.getElementById('l-pass').value;
-  const err=document.getElementById('l-err');
-  if(u===CREDS.username&&p===CREDS.password){
-    err.textContent='';
-    document.getElementById('login-screen').classList.remove('active');
-    document.getElementById('dashboard-screen').classList.add('active');
-    populateYearDropdown();renderDash();renderInclusion();
-    toast('Welcome back, Admin!','success');
-  } else {
-    err.textContent='Invalid username or password.';
-    document.getElementById('l-pass').value='';
-    document.getElementById('l-pass').focus();
-  }
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('dashboard-screen').classList.add('active');
+  populateYearDropdown();renderDash();renderInclusion();
+  toast('Welcome!','success');
 }
 function doLogout(){
   document.getElementById('dashboard-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
-  document.getElementById('l-user').value='';
-  document.getElementById('l-pass').value='';
-  document.getElementById('l-err').textContent='';
   showPage('home');
 }
 
@@ -731,6 +971,7 @@ function showPage(p){
   document.getElementById('nav-'+p).classList.add('active');
   if(p==='home')renderDash();
   if(p==='inclusion')renderInclusion();
+  if(p==='overtime')otInitPage();
 }
 function closeModal(){document.getElementById('del-modal').classList.remove('show');}
 
@@ -1470,13 +1711,649 @@ async function exportExcel(){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────
-document.getElementById('l-user').focus();
 
 // Start sync
 window.addEventListener('DOMContentLoaded',()=>{
   cloudPull();
   setInterval(cloudPull,20000);
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// ── OVERTIME MONITORING MODULE ────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+
+const GAS_URL=''; // Optional: paste your Google Apps Script Web App URL here
+
+function round2(v){return Math.round((parseFloat(v)||0)*100)/100;}
+
+// ── Storage ───────────────────────────────────────────────────────────
+function otLoad(){return JSON.parse(localStorage.getItem('ot_imports')||'[]');}
+function otSave(arr){localStorage.setItem('ot_imports',JSON.stringify(arr));}
+
+// ── Sub-nav ───────────────────────────────────────────────────────────
+const OT_SUBS=['upload','exec','dept','cc','emp','hist','rpt'];
+
+function otShowSub(name){
+  OT_SUBS.forEach(s=>{
+    document.getElementById('ot-sub-'+s).style.display=(s===name?'block':'none');
+    document.getElementById('otsub-'+s).classList.toggle('active',s===name);
+  });
+  if(name==='exec')otRenderExec();
+  if(name==='dept')otRenderDept();
+  if(name==='cc')otRenderCC();
+  if(name==='emp')otRenderEmp();
+  if(name==='hist')otRenderHist();
+  if(name==='rpt')otRenderRpt();
+}
+
+function otInitPage(){
+  // Populate affiliate dropdowns
+  const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff'];
+  affSelectors.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const cur=el.value;
+    while(el.options.length>1)el.remove(1);
+    AFFILIATES.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;el.appendChild(o);});
+    if(cur)el.value=cur;
+  });
+  otPopulatePeriodDropdowns();
+  // Show upload sub by default on first visit
+  const anyActive=OT_SUBS.some(s=>document.getElementById('ot-sub-'+s).style.display==='block');
+  if(!anyActive)otShowSub('upload');
+}
+
+function otPopulatePeriodDropdowns(){
+  const imports=otLoad();
+  const periods=[...new Set(imports.map(i=>i.periodLabel).filter(Boolean))].sort().reverse();
+  const periodSelectors=['ot-exec-period','ot-dept-period','ot-cc-period','ot-emp-period','ot-rpt-period'];
+  periodSelectors.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    const cur=el.value;
+    while(el.options.length>1)el.remove(1);
+    periods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;el.appendChild(o);});
+    if(cur)el.value=cur;
+  });
+}
+
+// ── File handling ─────────────────────────────────────────────────────
+let otParsedData=null;
+
+function otHandleDrop(event){
+  event.preventDefault();
+  document.getElementById('ot-dropzone').classList.remove('drag-over');
+  const file=event.dataTransfer.files[0];
+  if(file)otHandleFile(file);
+}
+
+function otHandleFile(file){
+  if(!file)return;
+  if(!/\.(xls|xlsx)$/i.test(file.name)){toast('Only .xls and .xlsx files are supported.','error');return;}
+  const reader=new FileReader();
+  reader.onload=e=>otParseWorkbook(e.target.result,file.name);
+  reader.readAsArrayBuffer(file);
+}
+
+// ── Column fuzzy detection ────────────────────────────────────────────
+const OT_COL_KEYWORDS={
+  name:  ['employee name','employee','emp name','name','personnel','staff'],
+  dept:  ['department','dept','division','div'],
+  cc:    ['cost center','costcenter','cost ctr','cost_center','cc','center'],
+  reg:   ['regular hours','reg hrs','reg hours','regular','basic hrs','basic hours','ordinary'],
+  ot:    ['overtime hours','overtime','ot hours','ot hrs','over time','extra hours','ot']
+};
+
+function otDetectCol(header){
+  const h=(header||'').toString().toLowerCase().trim().replace(/[\r\n]+/g,' ');
+  for(const[key,kws]of Object.entries(OT_COL_KEYWORDS)){
+    if(kws.some(kw=>h===kw||h.includes(kw)))return key;
+  }
+  return null;
+}
+
+function otParseWorkbook(buffer,fileName){
+  try{
+    const wb=XLSX.read(buffer,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
+    if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
+
+    // Find header row: first row where ≥2 cells match known keywords
+    let headerRowIdx=-1,colMap={};
+    for(let r=0;r<Math.min(raw.length,25);r++){
+      const row=raw[r];
+      const detected={};
+      row.forEach((cell,ci)=>{
+        const k=otDetectCol(cell);
+        if(k&&!(k in detected))detected[k]=ci;
+      });
+      if(Object.keys(detected).length>=2){headerRowIdx=r;colMap=detected;break;}
+    }
+    if(headerRowIdx===-1){
+      toast('Could not detect header row. Ensure the spreadsheet has columns for Employee Name, Regular Hours, and OT Hours.','error');
+      return;
+    }
+
+    // Parse data rows
+    const employees=[];
+    for(let r=headerRowIdx+1;r<raw.length;r++){
+      const row=raw[r];
+      const name=(colMap.name!=null?row[colMap.name]:'').toString().trim().toUpperCase();
+      if(!name||name.startsWith('TOTAL')||name.startsWith('GRAND'))continue;
+      const dept=(colMap.dept!=null?row[colMap.dept]:'').toString().trim();
+      const cc=(colMap.cc!=null?row[colMap.cc]:'').toString().trim();
+      const regularHours=round2(parseFloat(colMap.reg!=null?row[colMap.reg]:0)||0);
+      const overtimeHours=round2(parseFloat(colMap.ot!=null?row[colMap.ot]:0)||0);
+      const totalHours=round2(regularHours+overtimeHours);
+      const otPercentage=totalHours>0?round2((overtimeHours/totalHours)*100):0;
+      employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage});
+    }
+
+    if(!employees.length){toast('No employee data rows found after the header row.','error');return;}
+
+    otParsedData={fileName,employees,colMap};
+    otShowPreview(fileName,employees,colMap);
+  }catch(err){
+    toast('Failed to parse file: '+err.message,'error');
+    console.error(err);
+  }
+}
+
+function otShowPreview(fileName,employees,colMap){
+  document.getElementById('ot-preview-fname').textContent=fileName;
+  document.getElementById('ot-preview-count').textContent=employees.length+' rows detected';
+  document.getElementById('ot-preview-section').style.display='block';
+
+  const LABELS={name:'Employee Name',dept:'Department',cc:'Cost Center',reg:'Reg Hours',ot:'OT Hours'};
+  const chipHtml=Object.entries(LABELS).map(([k,label])=>{
+    const found=k in colMap;
+    return `<span class="ot-col-chip${found?'':' warn'}">${found?'✓ ':'! '}${label}</span>`;
+  }).join('');
+  document.getElementById('ot-col-map-display').innerHTML=chipHtml;
+
+  const tbody=document.getElementById('ot-preview-tbody');
+  tbody.innerHTML=employees.slice(0,50).map((e,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="name-cell">${e.name}</td>
+      <td>${e.department||'—'}</td>
+      <td>${e.costCenter||'—'}</td>
+      <td class="num-cell">${fmtNum(e.regularHours)}</td>
+      <td class="num-cell">${fmtNum(e.overtimeHours)}</td>
+      <td class="total-cell">${fmtNum(e.totalHours)}</td>
+      <td class="num-cell">${fmtNum(e.otPercentage)}%</td>
+    </tr>`).join('');
+  if(employees.length>50){
+    tbody.innerHTML+=`<tr class="empty-row"><td colspan="8">…and ${employees.length-50} more rows</td></tr>`;
+  }
+}
+
+function otCancelUpload(){
+  otParsedData=null;
+  document.getElementById('ot-preview-section').style.display='none';
+  document.getElementById('ot-file-input').value='';
+}
+
+// ── Save import ───────────────────────────────────────────────────────
+let otPendingReplace=null;
+
+function otSaveImport(){
+  if(!otParsedData){toast('No parsed data to save.','error');return;}
+  const affiliate=document.getElementById('ot-up-aff').value;
+  const periodLabel=document.getElementById('ot-up-period').value.trim();
+  const periodStart=document.getElementById('ot-up-start').value;
+  const periodEnd=document.getElementById('ot-up-end').value;
+  if(!affiliate){toast('Please select an Affiliate.','error');return;}
+  if(!periodLabel){toast('Please enter a Period Label.','error');return;}
+
+  const imports=otLoad();
+  const dupIdx=imports.findIndex(i=>i.affiliate===affiliate&&i.periodLabel===periodLabel);
+  if(dupIdx!==-1){
+    otPendingReplace={dupIdx,affiliate,periodLabel,periodStart,periodEnd};
+    document.getElementById('ot-dup-msg').textContent=
+      `An import for "${affiliate}" — "${periodLabel}" already exists `+
+      `(${imports[dupIdx].employeeCount} employees, uploaded ${new Date(imports[dupIdx].uploadedAt).toLocaleDateString()}). `+
+      `Replace it with the new file?`;
+    document.getElementById('ot-dup-modal').classList.add('show');
+    return;
+  }
+  otCommitSave(imports,-1,affiliate,periodLabel,periodStart,periodEnd);
+}
+
+function otDupCancel(){
+  otPendingReplace=null;
+  document.getElementById('ot-dup-modal').classList.remove('show');
+}
+
+function otDupReplace(){
+  if(!otPendingReplace)return;
+  document.getElementById('ot-dup-modal').classList.remove('show');
+  const imports=otLoad();
+  const{dupIdx,affiliate,periodLabel,periodStart,periodEnd}=otPendingReplace;
+  otPendingReplace=null;
+  otCommitSave(imports,dupIdx,affiliate,periodLabel,periodStart,periodEnd);
+}
+
+function otCommitSave(imports,dupIdx,affiliate,periodLabel,periodStart,periodEnd){
+  const{fileName,employees}=otParsedData;
+  const totalRegHours=round2(employees.reduce((s,e)=>s+e.regularHours,0));
+  const totalOTHours=round2(employees.reduce((s,e)=>s+e.overtimeHours,0));
+  const totalHours=round2(totalRegHours+totalOTHours);
+  const rec={
+    id:Date.now(),affiliate,periodLabel,periodStart,periodEnd,
+    fileName,uploadedAt:new Date().toISOString(),
+    employeeCount:employees.length,totalRegHours,totalOTHours,totalHours,
+    employees
+  };
+  if(dupIdx!==-1)imports.splice(dupIdx,1,rec);
+  else imports.push(rec);
+  otSave(imports);
+  otPopulatePeriodDropdowns();
+  otCancelUpload();
+  toast(`Import saved — ${employees.length} employees ✓`,'success');
+  if(GAS_URL)otGasSync('save',rec);
+}
+
+// ── Optional GAS sync ─────────────────────────────────────────────────
+async function otGasSync(action,payload){
+  try{
+    await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,payload})});
+  }catch(e){console.warn('GAS sync failed',e);}
+}
+
+// ── Shared query helpers ──────────────────────────────────────────────
+function otGetFiltered(affId,periodId){
+  return otLoad().filter(i=>{
+    if(affId&&i.affiliate!==affId)return false;
+    if(periodId&&i.periodLabel!==periodId)return false;
+    return true;
+  });
+}
+
+function otFlatEmployees(imports,deptFilter,ccFilter,searchQ){
+  const rows=[];
+  imports.forEach(imp=>{
+    imp.employees.forEach(e=>{
+      if(deptFilter&&e.department!==deptFilter)return;
+      if(ccFilter&&e.costCenter!==ccFilter)return;
+      if(searchQ&&!e.name.toLowerCase().includes(searchQ))return;
+      rows.push({...e,affiliate:imp.affiliate,periodLabel:imp.periodLabel,importId:imp.id});
+    });
+  });
+  return rows;
+}
+
+function otAggregateBy(employees,key){
+  const map={};
+  employees.forEach(e=>{
+    const k=e[key]||'(Unassigned)';
+    if(!map[k])map[k]={label:k,empCount:0,reg:0,ot:0,total:0};
+    map[k].empCount++;
+    map[k].reg=round2(map[k].reg+e.regularHours);
+    map[k].ot=round2(map[k].ot+e.overtimeHours);
+    map[k].total=round2(map[k].total+e.totalHours);
+  });
+  return Object.values(map).map(m=>({...m,otPct:m.total>0?round2((m.ot/m.total)*100):0}))
+    .sort((a,b)=>b.ot-a.ot);
+}
+
+function otBarChart(containerId,data,labelKey,valueKey){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  if(!data.length){el.innerHTML='<div class="ot-empty"><p>No data to display.</p></div>';return;}
+  const max=Math.max(...data.map(d=>d[valueKey]),1);
+  el.innerHTML=data.slice(0,30).map((d,i)=>{
+    const pct=(d[valueKey]/max)*100;
+    const color=BAR_COLORS[i%BAR_COLORS.length];
+    return `<div class="bar-row">
+      <div class="bar-label" title="${d[labelKey]}">${d[labelKey]||'—'}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct,2)}%;background:${color}"><span>${fmtNum(d[valueKey])}</span></div></div>
+      <div class="bar-count" style="color:${color}">${fmtNum(d[valueKey])}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Executive Dashboard ───────────────────────────────────────────────
+function otRenderExec(){
+  const aff=document.getElementById('ot-exec-aff').value;
+  const period=document.getElementById('ot-exec-period').value;
+  const filtered=otGetFiltered(aff,period);
+  const allEmps=otFlatEmployees(filtered,'','','');
+
+  if(!allEmps.length){
+    document.getElementById('ot-exec-kpis').innerHTML=`<div class="ot-kpi" style="grid-column:1/-1"><div class="kl">No Data</div><div class="kv">—</div><div class="ks">Upload a timesheet to get started</div></div>`;
+    document.getElementById('ot-exec-bar').innerHTML='<div class="ot-empty"><p>No data</p></div>';
+    document.getElementById('ot-exec-pct-bar').innerHTML='<div class="ot-empty"><p>No data</p></div>';
+    return;
+  }
+
+  const totalReg=round2(allEmps.reduce((s,e)=>s+e.regularHours,0));
+  const totalOT=round2(allEmps.reduce((s,e)=>s+e.overtimeHours,0));
+  const totalHrs=round2(totalReg+totalOT);
+  const otPct=totalHrs>0?round2((totalOT/totalHrs)*100):0;
+  const deptSet=new Set(allEmps.map(e=>e.department).filter(Boolean));
+  const ccSet=new Set(allEmps.map(e=>e.costCenter).filter(Boolean));
+
+  document.getElementById('ot-exec-kpis').innerHTML=`
+    <div class="ot-kpi"><div class="kl">Total Employees</div><div class="kv">${allEmps.length}</div><div class="ks">${filtered.length} import(s)</div></div>
+    <div class="ot-kpi green"><div class="kl">Regular Hours</div><div class="kv">${fmtNum(totalReg)}</div><div class="ks">hrs</div></div>
+    <div class="ot-kpi gold"><div class="kl">Overtime Hours</div><div class="kv">${fmtNum(totalOT)}</div><div class="ks">hrs</div></div>
+    <div class="ot-kpi sky"><div class="kl">Total Hours</div><div class="kv">${fmtNum(totalHrs)}</div><div class="ks">reg + OT</div></div>
+    <div class="ot-kpi red"><div class="kl">OT Rate</div><div class="kv">${fmtNum(otPct)}%</div><div class="ks">OT / Total Hrs</div></div>
+    <div class="ot-kpi"><div class="kl">Departments</div><div class="kv">${deptSet.size}</div><div class="ks">${ccSet.size} cost centers</div></div>
+  `;
+  const byAff=otAggregateBy(allEmps,'affiliate');
+  otBarChart('ot-exec-bar',byAff,'label','ot');
+  otBarChart('ot-exec-pct-bar',[...byAff].sort((a,b)=>b.otPct-a.otPct),'label','otPct');
+}
+
+// ── Departments ───────────────────────────────────────────────────────
+function otRenderDept(){
+  const aff=document.getElementById('ot-dept-aff').value;
+  const period=document.getElementById('ot-dept-period').value;
+  const q=(document.getElementById('ot-dept-search').value||'').toLowerCase();
+  const filtered=otGetFiltered(aff,period);
+  const allEmps=otFlatEmployees(filtered,'','','');
+  const agg=otAggregateBy(allEmps,'department').filter(d=>!q||d.label.toLowerCase().includes(q));
+  document.getElementById('ot-dept-count').textContent=agg.length;
+  otBarChart('ot-dept-bar',agg,'label','ot');
+  const tbody=document.getElementById('ot-dept-tbody');
+  if(!agg.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No department data.</td></tr>';return;}
+  tbody.innerHTML=agg.map((d,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="name-cell">${d.label}</td>
+      <td class="num-cell">${d.empCount}</td>
+      <td class="num-cell">${fmtNum(d.reg)}</td>
+      <td class="num-cell">${fmtNum(d.ot)}</td>
+      <td class="total-cell">${fmtNum(d.total)}</td>
+      <td class="num-cell">${fmtNum(d.otPct)}%</td>
+    </tr>`).join('');
+}
+
+// ── Cost Centers ──────────────────────────────────────────────────────
+function otRenderCC(){
+  const aff=document.getElementById('ot-cc-aff').value;
+  const period=document.getElementById('ot-cc-period').value;
+  const q=(document.getElementById('ot-cc-search').value||'').toLowerCase();
+  const filtered=otGetFiltered(aff,period);
+  const allEmps=otFlatEmployees(filtered,'','','');
+  const agg=otAggregateBy(allEmps,'costCenter').filter(d=>!q||d.label.toLowerCase().includes(q));
+  document.getElementById('ot-cc-count').textContent=agg.length;
+  otBarChart('ot-cc-bar',agg,'label','ot');
+  const tbody=document.getElementById('ot-cc-tbody');
+  if(!agg.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No cost center data.</td></tr>';return;}
+  tbody.innerHTML=agg.map((d,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="name-cell">${d.label}</td>
+      <td class="num-cell">${d.empCount}</td>
+      <td class="num-cell">${fmtNum(d.reg)}</td>
+      <td class="num-cell">${fmtNum(d.ot)}</td>
+      <td class="total-cell">${fmtNum(d.total)}</td>
+      <td class="num-cell">${fmtNum(d.otPct)}%</td>
+    </tr>`).join('');
+}
+
+// ── Employees ─────────────────────────────────────────────────────────
+function otRenderEmp(){
+  const aff=document.getElementById('ot-emp-aff').value;
+  const period=document.getElementById('ot-emp-period').value;
+  const dept=document.getElementById('ot-emp-dept').value;
+  const cc=document.getElementById('ot-emp-cc').value;
+  const q=(document.getElementById('ot-emp-search').value||'').toLowerCase();
+  const filtered=otGetFiltered(aff,period);
+  const rows=otFlatEmployees(filtered,dept,cc,q);
+  document.getElementById('ot-emp-count').textContent=rows.length+' employees';
+
+  // Refresh dept/cc dropdowns
+  const allEmps=otFlatEmployees(otGetFiltered(aff,period),'','','');
+  const depts=[...new Set(allEmps.map(e=>e.department).filter(Boolean))].sort();
+  const ccs=[...new Set(allEmps.map(e=>e.costCenter).filter(Boolean))].sort();
+  ['ot-emp-dept','ot-rpt-dept'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;while(el.options.length>1)el.remove(1);
+    depts.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;el.appendChild(o);});
+    if(cur)el.value=cur;
+  });
+  ['ot-emp-cc','ot-rpt-cc'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;while(el.options.length>1)el.remove(1);
+    ccs.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});
+    if(cur)el.value=cur;
+  });
+
+  const tbody=document.getElementById('ot-emp-tbody');
+  if(!rows.length){tbody.innerHTML='<tr class="empty-row"><td colspan="10">No records match the selected filters.</td></tr>';return;}
+  tbody.innerHTML=rows.map((e,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="name-cell">${e.name}</td>
+      <td>${e.department||'—'}</td>
+      <td>${e.costCenter||'—'}</td>
+      <td><span class="aff-badge">${e.affiliate}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${e.periodLabel}</td>
+      <td class="num-cell">${fmtNum(e.regularHours)}</td>
+      <td class="num-cell">${fmtNum(e.overtimeHours)}</td>
+      <td class="total-cell">${fmtNum(e.totalHours)}</td>
+      <td class="num-cell">${fmtNum(e.otPercentage)}%</td>
+    </tr>`).join('');
+}
+
+// ── Historical ────────────────────────────────────────────────────────
+function otRenderHist(){
+  const aff=document.getElementById('ot-hist-aff').value;
+  const imports=otGetFiltered(aff,'').sort((a,b)=>new Date(b.uploadedAt)-new Date(a.uploadedAt));
+  const container=document.getElementById('ot-hist-list');
+  if(!imports.length){
+    container.innerHTML=`<div class="ot-empty">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg>
+      <p>No imports yet. Use the <strong>Upload</strong> tab to import an OT timesheet.</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML=imports.map(imp=>{
+    const otRate=imp.totalHours>0?round2((imp.totalOTHours/imp.totalHours)*100):0;
+    return `
+    <div class="ot-import-card" onclick="otHistExpand('${imp.id}')">
+      <div class="ot-import-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg></div>
+      <div class="ot-import-info">
+        <div class="oi-title">${imp.affiliate} — ${imp.periodLabel}</div>
+        <div class="oi-meta">${imp.fileName} &nbsp;·&nbsp; Uploaded ${new Date(imp.uploadedAt).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'})}</div>
+      </div>
+      <div class="ot-import-stats">
+        <div class="ot-stat-chip"><div class="cs-val">${imp.employeeCount}</div><div class="cs-lbl">Emps</div></div>
+        <div class="ot-stat-chip"><div class="cs-val">${fmtNum(imp.totalOTHours)}</div><div class="cs-lbl">OT Hrs</div></div>
+        <div class="ot-stat-chip"><div class="cs-val">${fmtNum(otRate)}%</div><div class="cs-lbl">OT Rate</div></div>
+        <button class="btn btn-danger" style="font-size:11px;padding:5px 10px" onclick="event.stopPropagation();otDeleteImport('${imp.id}')">Delete</button>
+      </div>
+    </div>
+    <div id="ot-hist-expand-${imp.id}" style="display:none;margin-bottom:14px">
+      <div class="table-card"><div class="table-wrap" style="max-height:260px">
+        <table><thead><tr>
+          <th>#</th><th style="text-align:left">Employee</th><th>Dept</th><th>Cost Center</th>
+          <th>Reg Hrs</th><th>OT Hrs</th><th>Total</th><th>OT %</th>
+        </tr></thead>
+        <tbody>${imp.employees.map((e,i)=>`
+          <tr>
+            <td style="color:var(--text3);font-size:11px;font-family:'DM Mono',monospace">${i+1}</td>
+            <td class="name-cell">${e.name}</td><td>${e.department||'—'}</td><td>${e.costCenter||'—'}</td>
+            <td class="num-cell">${fmtNum(e.regularHours)}</td><td class="num-cell">${fmtNum(e.overtimeHours)}</td>
+            <td class="total-cell">${fmtNum(e.totalHours)}</td><td class="num-cell">${fmtNum(e.otPercentage)}%</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div></div>
+    </div>`;
+  }).join('');
+}
+
+function otHistExpand(id){
+  const el=document.getElementById('ot-hist-expand-'+id);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function otDeleteImport(id){
+  const imports=otLoad().filter(i=>String(i.id)!==String(id));
+  otSave(imports);
+  otPopulatePeriodDropdowns();
+  otRenderHist();
+  toast('Import deleted','success');
+  if(GAS_URL)otGasSync('delete',{id});
+}
+
+// ── Reports ───────────────────────────────────────────────────────────
+function otRenderRpt(){
+  const aff=document.getElementById('ot-rpt-aff').value;
+  const period=document.getElementById('ot-rpt-period').value;
+  const dept=document.getElementById('ot-rpt-dept').value;
+  const cc=document.getElementById('ot-rpt-cc').value;
+  const q=(document.getElementById('ot-rpt-search').value||'').toLowerCase();
+  const filtered=otGetFiltered(aff,period);
+  const rows=otFlatEmployees(filtered,dept,cc,q);
+  document.getElementById('ot-rpt-count').textContent=rows.length+' rows';
+
+  const totalReg=round2(rows.reduce((s,e)=>s+e.regularHours,0));
+  const totalOT=round2(rows.reduce((s,e)=>s+e.overtimeHours,0));
+  const totalHrs=round2(totalReg+totalOT);
+  const otPct=totalHrs>0?round2((totalOT/totalHrs)*100):0;
+  document.getElementById('ot-rpt-kpis').innerHTML=`
+    <div class="ot-kpi"><div class="kl">Employees</div><div class="kv">${rows.length}</div><div class="ks">in results</div></div>
+    <div class="ot-kpi green"><div class="kl">Reg Hours</div><div class="kv">${fmtNum(totalReg)}</div><div class="ks">hrs</div></div>
+    <div class="ot-kpi gold"><div class="kl">OT Hours</div><div class="kv">${fmtNum(totalOT)}</div><div class="ks">hrs</div></div>
+    <div class="ot-kpi red"><div class="kl">OT Rate</div><div class="kv">${fmtNum(otPct)}%</div><div class="ks">OT / Total</div></div>
+  `;
+
+  const tbody=document.getElementById('ot-rpt-tbody');
+  if(!rows.length){tbody.innerHTML='<tr class="empty-row"><td colspan="10">No records match the selected filters.</td></tr>';return;}
+  tbody.innerHTML=rows.map((e,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="name-cell">${e.name}</td>
+      <td>${e.department||'—'}</td>
+      <td>${e.costCenter||'—'}</td>
+      <td><span class="aff-badge">${e.affiliate}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${e.periodLabel}</td>
+      <td class="num-cell">${fmtNum(e.regularHours)}</td>
+      <td class="num-cell">${fmtNum(e.overtimeHours)}</td>
+      <td class="total-cell">${fmtNum(e.totalHours)}</td>
+      <td class="num-cell">${fmtNum(e.otPercentage)}%</td>
+    </tr>`).join('');
+}
+
+// ── OT Excel Export ───────────────────────────────────────────────────
+async function otExportExcel(){
+  const aff=document.getElementById('ot-rpt-aff').value;
+  const period=document.getElementById('ot-rpt-period').value;
+  const dept=document.getElementById('ot-rpt-dept').value;
+  const cc=document.getElementById('ot-rpt-cc').value;
+  const q=(document.getElementById('ot-rpt-search').value||'').toLowerCase();
+  const filtered=otGetFiltered(aff,period);
+  const rows=otFlatEmployees(filtered,dept,cc,q);
+  if(!rows.length){toast('No data to export.','error');return;}
+  toast('Preparing OT Excel export…','');
+
+  const wb=new ExcelJS.Workbook();
+  wb.creator='PGB Timekeeping Monitoring';wb.created=new Date();
+  const ws=wb.addWorksheet('OT Report',{
+    pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1}
+  });
+
+  const C={navy:'0D1F3C',navy2:'1A3560',blue:'1A56A8',gold:'F59E0B',white:'FFFFFF',off:'F7F9FC',border:'B0C4D8',text3:'8DA0B5'};
+  const med={style:'medium',color:{argb:'FF'+C.navy}};
+  const thin={style:'thin',color:{argb:'FF'+C.border}};
+
+  ws.columns=[
+    {key:'seq',width:5},{key:'name',width:30},{key:'dept',width:22},{key:'cc',width:18},
+    {key:'aff',width:14},{key:'period',width:22},{key:'reg',width:12},{key:'ot',width:12},
+    {key:'total',width:12},{key:'otpct',width:10}
+  ];
+
+  // Title
+  ws.mergeCells('A1:J1');
+  const tc=ws.getCell('A1');
+  tc.value='OVERTIME MONITORING REPORT';
+  tc.font={name:'Arial',bold:true,size:14,color:{argb:'FF'+C.white}};
+  tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.navy}};
+  tc.alignment={horizontal:'center',vertical:'middle'};
+  ws.getRow(1).height=28;
+
+  // Subtitle
+  ws.mergeCells('A2:J2');
+  const sc=ws.getCell('A2');
+  const now=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+  sc.value=`Affiliate: ${aff||'All'}  |  Period: ${period||'All'}  |  Generated: ${now}`;
+  sc.font={name:'Arial',size:9,italic:true,color:{argb:'FF'+C.white}};
+  sc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.navy2}};
+  sc.alignment={horizontal:'center',vertical:'middle'};
+  ws.getRow(2).height=18;
+
+  // Headers
+  const HDRS=['#','EMPLOYEE NAME','DEPARTMENT','COST CENTER','AFFILIATE','PERIOD','REG HRS','OT HRS','TOTAL HRS','OT %'];
+  const hdr=ws.getRow(3);hdr.height=26;
+  HDRS.forEach((h,i)=>{
+    const cell=hdr.getCell(i+1);
+    cell.value=h;
+    cell.font={name:'Arial',bold:true,size:9,color:{argb:'FF'+C.white}};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.navy}};
+    cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+    cell.border={top:med,bottom:med,left:i===0?med:thin,right:i===9?med:thin};
+  });
+  hdr.getCell(2).alignment={horizontal:'left',vertical:'middle'};
+
+  // Data rows
+  const NUM_FMT='#,##0.##;-#,##0.##;"-"';
+  rows.forEach((e,i)=>{
+    const row=ws.addRow([i+1,e.name,e.department||'',e.costCenter||'',e.affiliate,e.periodLabel,
+      e.regularHours,e.overtimeHours,e.totalHours,e.otPercentage]);
+    row.height=16;
+    const bg=i%2===0?C.off:C.white;
+    row.eachCell((cell,cn)=>{
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+bg}};
+      cell.font={name:'Arial',size:9};
+      cell.border={top:thin,bottom:thin,left:cn===1?med:thin,right:cn===10?med:thin};
+      cell.alignment={vertical:'middle',horizontal:cn>6?'center':'left'};
+      if(cn>6)cell.numFmt=NUM_FMT;
+    });
+    // Name left-aligned bold
+    row.getCell(2).font={name:'Arial',size:9,bold:true,color:{argb:'FF'+C.navy}};
+    row.getCell(2).alignment={horizontal:'left',vertical:'middle'};
+  });
+
+  // Grand total
+  const tReg=round2(rows.reduce((s,e)=>s+e.regularHours,0));
+  const tOT=round2(rows.reduce((s,e)=>s+e.overtimeHours,0));
+  const tAll=round2(tReg+tOT);
+  const gtRow=ws.addRow(['','GRAND TOTAL','','','','',tReg,tOT,tAll,tAll>0?round2((tOT/tAll)*100):0]);
+  gtRow.height=22;
+  gtRow.eachCell((cell,cn)=>{
+    cell.font={name:'Arial',bold:true,size:10,color:{argb:'FF'+C.white}};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.blue}};
+    cell.border={top:med,bottom:med,left:cn===1?med:thin,right:cn===10?med:thin};
+    cell.alignment={vertical:'middle',horizontal:cn>6?'center':'left'};
+    if(cn>6)cell.numFmt=NUM_FMT;
+  });
+  gtRow.getCell(2).alignment={horizontal:'left',vertical:'middle'};
+
+  // Footer
+  ws.addRow([]);
+  const footerRow=ws.addRow([`This report was generated by PGB Timekeeping Monitoring Dashboard on ${now}. Total rows: ${rows.length}.`]);
+  ws.mergeCells(footerRow.number,1,footerRow.number,10);
+  footerRow.getCell(1).font={name:'Arial',size:8,italic:true,color:{argb:'FF'+C.text3}};
+  footerRow.getCell(1).alignment={horizontal:'center',vertical:'middle'};
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;
+  const affStr=(aff||'all').replace(/\s+/g,'_');
+  const pStr=(period||'all').replace(/[^a-zA-Z0-9_-]/g,'').substring(0,30);
+  a.download=`OT_Report_${affStr}_${pStr}.xlsx`;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('OT Excel exported — '+rows.length+' rows ✓','success');
+}
+// ── END OVERTIME MONITORING MODULE ────────────────────────────────────
 </script>
 </body>
 </html>

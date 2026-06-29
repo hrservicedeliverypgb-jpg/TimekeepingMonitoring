@@ -1724,12 +1724,31 @@ window.addEventListener('DOMContentLoaded',()=>{
 // ══════════════════════════════════════════════════════════════════════
 
 const GAS_URL=''; // Optional: paste your Google Apps Script Web App URL here
+const OT_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/ot_imports.json';
 
 function round2(v){return Math.round((parseFloat(v)||0)*100)/100;}
 
-// ── Storage ───────────────────────────────────────────────────────────
+// ── Storage + Firebase sync ───────────────────────────────────────────
 function otLoad(){return JSON.parse(localStorage.getItem('ot_imports')||'[]');}
-function otSave(arr){localStorage.setItem('ot_imports',JSON.stringify(arr));}
+function otSave(arr){
+  localStorage.setItem('ot_imports',JSON.stringify(arr));
+  otCloudSave(arr);
+}
+async function otCloudSave(arr){
+  try{
+    await fetch(OT_FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(arr)});
+  }catch(e){console.warn('OT cloud save failed',e);}
+}
+async function otCloudPull(){
+  try{
+    const res=await fetch(OT_FB_URL);
+    if(!res.ok)return;
+    const data=await res.json();
+    if(Array.isArray(data)&&data.length){
+      localStorage.setItem('ot_imports',JSON.stringify(data));
+    }
+  }catch(e){console.warn('OT cloud pull failed',e);}
+}
 
 // ── Sub-nav ───────────────────────────────────────────────────────────
 const OT_SUBS=['upload','exec','dept','cc','emp','hist','rpt'];
@@ -1748,20 +1767,21 @@ function otShowSub(name){
 }
 
 function otInitPage(){
-  // Populate affiliate dropdowns
-  const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff'];
-  affSelectors.forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    const cur=el.value;
-    while(el.options.length>1)el.remove(1);
-    AFFILIATES.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;el.appendChild(o);});
-    if(cur)el.value=cur;
+  // Pull latest data from Firebase first, then render
+  otCloudPull().then(()=>{
+    const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff'];
+    affSelectors.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      const cur=el.value;
+      while(el.options.length>1)el.remove(1);
+      AFFILIATES.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;el.appendChild(o);});
+      if(cur)el.value=cur;
+    });
+    otPopulatePeriodDropdowns();
+    const anyActive=OT_SUBS.some(s=>document.getElementById('ot-sub-'+s).style.display==='block');
+    if(!anyActive)otShowSub('upload');
   });
-  otPopulatePeriodDropdowns();
-  // Show upload sub by default on first visit
-  const anyActive=OT_SUBS.some(s=>document.getElementById('ot-sub-'+s).style.display==='block');
-  if(!anyActive)otShowSub('upload');
 }
 
 function otPopulatePeriodDropdowns(){

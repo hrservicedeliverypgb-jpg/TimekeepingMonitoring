@@ -2372,7 +2372,7 @@ function otRptGetData(){
   if(aff)imports=imports.filter(i=>i.affiliate===aff);
   const employees=otFlatEmployees(imports,'','','');
   const periods=[...new Set(imports.map(i=>i.periodLabel).filter(Boolean))];
-  const cutoff=period||(periods.length===1?periods[0]:periods.length?periods.length+' cut-off periods':'—');
+  const cutoff=period||(periods.length===1?periods[0]:periods.length?periods.length+' covering periods':'—');
   return{year,period,aff,imports,employees,cutoff};
 }
 
@@ -2419,7 +2419,7 @@ function otRenderRpt(){
       <td class="otr-num">${pctFmt(m.pct)}</td>
     </tr>`;
 
-  let html=`<tr><td class="otr-hdr">CUT-OFF PERIOD</td><td class="otr-cut-val" colspan="3">${cutoff}${aff?' &nbsp;·&nbsp; '+aff:''}</td></tr>`+spacer;
+  let html=`<tr><td class="otr-hdr">COVERING PERIOD</td><td class="otr-cut-val" colspan="3">${cutoff}${aff?' &nbsp;·&nbsp; '+aff:''}</td></tr>`+spacer;
   html+=secHdr('DEPARTMENT')+otRptAggregate(employees,'department').map(m=>dataRow(m,false)).join('')+spacer;
   html+=secHdr('COST CENTER')+otRptAggregate(employees,'costCenter').map(m=>dataRow(m,false)).join('')+spacer;
   html+=secHdr('EMPLOYEE')+otRptAggregate(employees,'name').map(m=>dataRow(m,true)).join('');
@@ -2446,11 +2446,11 @@ async function otExportExcel(){
 
   let r=1;
 
-  // CUT-OFF PERIOD banner
+  // COVERING PERIOD banner
   {
     const row=ws.getRow(r);row.height=22;
     const c1=row.getCell(1);
-    c1.value='CUT-OFF PERIOD';
+    c1.value='COVERING PERIOD';
     c1.font={name:'Arial',bold:true,size:10,color:{argb:'FF'+C.white}};
     c1.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.green}};
     c1.alignment={horizontal:'left',vertical:'middle'};

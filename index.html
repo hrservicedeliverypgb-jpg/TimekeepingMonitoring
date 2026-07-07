@@ -1881,81 +1881,97 @@ function otCalcOT(row,colMap){
   return round2(parseFloat(colMap.ot!=null?row[colMap.ot]:0)||0);
 }
 
+// Parse one worksheet; returns null if it has no RGOT header (not a timesheet tab)
+function otParseSheet(ws,sheetName){
+  // blankrows:true keeps empty rows so raw[] indices line up with the sheet
+  // row numbers used to locate the RGOT header (blank title/spacer rows would
+  // otherwise shift the data and silently drop the first employee rows)
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:true});
+  if(!raw.length)return null;
+
+  // Find RGOT and ABSHRS by scanning cell addresses directly — no keyword thresholds.
+  // This is reliable regardless of how many other headers are on the same row.
+  const sheetRange=XLSX.utils.decode_range(ws['!ref']||'A1');
+  let rgotRow=-1,rgotCol=-1,abshrsCol=-1;
+  outer:
+  for(let r=0;r<=Math.min(sheetRange.e.r,30);r++){
+    for(let c=0;c<=sheetRange.e.c;c++){
+      const cell=ws[XLSX.utils.encode_cell({r,c})];
+      if(!cell||cell.v==null)continue;
+      const v=cell.v.toString().trim().toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
+      if(v==='rgot'&&rgotRow===-1){rgotRow=r;rgotCol=c;}
+      if((v==='abshours'||v==='abshrs'||v==='abs hrs'||v==='abs hours')&&abshrsCol===-1)abshrsCol=c;
+    }
+    // Stop once we've found RGOT and scanned that entire row
+    if(rgotRow!==-1&&r>rgotRow)break outer;
+  }
+  if(rgotRow===-1)return null;
+
+  // Build colMap anchored on RGOT; merge rows within ±2 for all other headers
+  // (handles split two-row merged headers — no adj.count guard needed)
+  const headerRowIdx=rgotRow;
+  const colMap={rgot:rgotCol};
+  if(abshrsCol!==-1)colMap.abshours=abshrsCol;
+  const otColNames=new Array(sheetRange.e.c+1).fill('');
+  for(let delta=-2;delta<=2;delta++){
+    const nr=rgotRow+delta;
+    if(nr<0||nr>=raw.length)continue;
+    raw[nr].forEach((cell,ci)=>{
+      const n=(cell||'').toString().trim();
+      if(n&&!otColNames[ci])otColNames[ci]=n;
+      const k=otDetectCol(n);
+      if(k&&!(k in colMap))colMap[k]=ci;
+    });
+  }
+
+  // Debug output
+  console.log('[OT] sheet "'+sheetName+'": RGOT at row',rgotRow,'col',rgotCol,'| abshrsCol=',abshrsCol);
+  console.log('[OT] colMap:',JSON.stringify(colMap));
+  if(colMap.abshours!=null)
+    console.log('[OT] OT range:',otColNames.slice(colMap.rgot,colMap.abshours).join(', '));
+  else
+    console.warn('[OT] ABSHRS not found — will use RGOT column only');
+
+  // Parse data rows
+  const employees=[];
+  for(let r=headerRowIdx+1;r<raw.length;r++){
+    const row=raw[r];
+    const name=otBuildName(row,colMap);
+    if(!name||name.startsWith('TOTAL')||name.startsWith('GRAND')||name.startsWith('SUB-TOTAL'))continue;
+    const dept=(colMap.dept!=null?row[colMap.dept]:'').toString().trim();
+    const cc  =(colMap.cc  !=null?row[colMap.cc]  :'').toString().trim();
+    const regularHours =round2(parseFloat(colMap.reg!=null?row[colMap.reg]:0)||0);
+    const overtimeHours=otCalcOT(row,colMap);
+    const totalHours   =round2(regularHours+overtimeHours);
+    const otPercentage =totalHours>0?round2((overtimeHours/totalHours)*100):0;
+    employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage});
+  }
+  return{employees,colMap,otColNames,headerRowIdx};
+}
+
 function otParseWorkbook(buffer,fileName){
   try{
     const wb=XLSX.read(buffer,{type:'array'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    // blankrows:true keeps empty rows so raw[] indices line up with the sheet
-    // row numbers used to locate the RGOT header (blank title/spacer rows would
-    // otherwise shift the data and silently drop the first employee rows)
-    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:true});
-    if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
-
-    // Find RGOT and ABSHRS by scanning cell addresses directly — no keyword thresholds.
-    // This is reliable regardless of how many other headers are on the same row.
-    const sheetRange=XLSX.utils.decode_range(ws['!ref']||'A1');
-    let rgotRow=-1,rgotCol=-1,abshrsCol=-1;
-    outer:
-    for(let r=0;r<=Math.min(sheetRange.e.r,30);r++){
-      for(let c=0;c<=sheetRange.e.c;c++){
-        const cell=ws[XLSX.utils.encode_cell({r,c})];
-        if(!cell||cell.v==null)continue;
-        const v=cell.v.toString().trim().toLowerCase().replace(/[^a-z0-9 ]/g,'').trim();
-        if(v==='rgot'&&rgotRow===-1){rgotRow=r;rgotCol=c;}
-        if((v==='abshours'||v==='abshrs'||v==='abs hrs'||v==='abs hours')&&abshrsCol===-1)abshrsCol=c;
-      }
-      // Stop once we've found RGOT and scanned that entire row
-      if(rgotRow!==-1&&r>rgotRow)break outer;
-    }
-    if(rgotRow===-1){
-      toast('RGOT column not found. Make sure the spreadsheet has a header cell named "RGOT".','error');
+    // Parse EVERY sheet that has an RGOT header — timesheets are often split
+    // across tabs (e.g. regular + confidential sections); reading only the
+    // first tab silently drops whole departments.
+    const results=[];
+    wb.SheetNames.forEach(sn=>{
+      const res=otParseSheet(wb.Sheets[sn],sn);
+      if(res&&res.employees.length)results.push({sheetName:sn,...res});
+    });
+    if(!results.length){
+      toast('No timesheet data found. Make sure at least one sheet has a header cell named "RGOT".','error');
       return;
     }
-
-    // Build colMap anchored on RGOT; merge rows within ±2 for all other headers
-    // (handles split two-row merged headers — no adj.count guard needed)
-    const headerRowIdx=rgotRow;
-    const colMap={rgot:rgotCol};
-    if(abshrsCol!==-1)colMap.abshours=abshrsCol;
-    const otColNames=new Array(sheetRange.e.c+1).fill('');
-    for(let delta=-2;delta<=2;delta++){
-      const nr=rgotRow+delta;
-      if(nr<0||nr>=raw.length)continue;
-      raw[nr].forEach((cell,ci)=>{
-        const n=(cell||'').toString().trim();
-        if(n&&!otColNames[ci])otColNames[ci]=n;
-        const k=otDetectCol(n);
-        if(k&&!(k in colMap))colMap[k]=ci;
-      });
-    }
-
-    // Debug output
-    console.log('[OT] RGOT found at row',rgotRow,'col',rgotCol,'| abshrsCol=',abshrsCol);
-    console.log('[OT] colMap:',JSON.stringify(colMap));
-    if(colMap.abshours!=null)
-      console.log('[OT] OT range:',otColNames.slice(colMap.rgot,colMap.abshours).join(', '));
-    else
-      console.warn('[OT] ABSHRS not found — will use RGOT column only');
-
-    // Parse data rows
-    const employees=[];
-    for(let r=headerRowIdx+1;r<raw.length;r++){
-      const row=raw[r];
-      const name=otBuildName(row,colMap);
-      if(!name||name.startsWith('TOTAL')||name.startsWith('GRAND')||name.startsWith('SUB-TOTAL'))continue;
-      const dept=(colMap.dept!=null?row[colMap.dept]:'').toString().trim();
-      const cc  =(colMap.cc  !=null?row[colMap.cc]  :'').toString().trim();
-      const regularHours =round2(parseFloat(colMap.reg!=null?row[colMap.reg]:0)||0);
-      const overtimeHours=otCalcOT(row,colMap);
-      const totalHours   =round2(regularHours+overtimeHours);
-      const otPercentage =totalHours>0?round2((overtimeHours/totalHours)*100):0;
-      employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage});
-    }
-
-    if(!employees.length){toast('No employee data rows found after the header row.','error');return;}
-
-    otParsedData={fileName,employees,colMap,otColNames,headerRowIdx};
-    otShowPreview(fileName,employees,colMap,otColNames,headerRowIdx);
+    const employees=results.flatMap(r=>r.employees);
+    const first=results[0];
+    otParsedData={
+      fileName,employees,
+      colMap:first.colMap,otColNames:first.otColNames,headerRowIdx:first.headerRowIdx,
+      sheets:results.map(r=>({name:r.sheetName,count:r.employees.length}))
+    };
+    otShowPreview(fileName,employees,first.colMap,first.otColNames,first.headerRowIdx);
   }catch(err){
     toast('Failed to parse file: '+err.message,'error');
     console.error(err);
@@ -1987,6 +2003,8 @@ function otShowPreview(fileName,employees,colMap,otColNames,headerRowIdx){
   // Debug panel — shows exactly what the browser read from the file
   const dbg=document.getElementById('ot-debug-info');
   const dbLines=[];
+  if(otParsedData&&otParsedData.sheets)
+    dbLines.push(`Sheets parsed: ${otParsedData.sheets.map(s=>s.name+' ('+s.count+' rows)').join(', ')}`);
   dbLines.push(`RGOT: ${colMap.rgot!=null?'col '+colMap.rgot+' = "'+otColNames[colMap.rgot]+'"':'NOT FOUND ⚠'}`);
   if(colMap.abshours!=null&&colMap.rgot!=null&&colMap.abshours>colMap.rgot){
     const sumCols=otColNames.slice(colMap.rgot,colMap.abshours).map((n,i)=>(colMap.rgot+i)+(n?':'+n:'')).join(', ');

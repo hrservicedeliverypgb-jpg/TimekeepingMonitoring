@@ -614,6 +614,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         <button class="ot-sub-btn active" onclick="otShowSub('upload')" id="otsub-upload">
           <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg> Upload
         </button>
+        <button class="ot-sub-btn" onclick="otShowSub('periods')" id="otsub-periods">
+          <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg> Covering Periods
+        </button>
         <button class="ot-sub-btn" onclick="otShowSub('exec')" id="otsub-exec">
           <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Executive Dashboard
         </button>
@@ -644,8 +647,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
               <select id="ot-up-aff"><option value="">— Select Affiliate —</option></select>
             </div>
             <div class="fg" style="margin:0">
-              <label>Period Label (e.g. June 1–15, 2025)</label>
-              <input id="ot-up-period" type="text" placeholder="e.g. June 1-15, 2025" autocomplete="off"/>
+              <label>Covering Period</label>
+              <select id="ot-up-period" onchange="otUpPeriodChange()"><option value="">— Select Covering Period —</option></select>
+              <div style="font-size:10.5px;color:var(--text3);margin-top:4px">Manage the list in the <strong>Covering Periods</strong> tab</div>
             </div>
             <div class="fg" style="margin:0">
               <label>Period Start</label>
@@ -693,6 +697,39 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
               Save Import
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- COVERING PERIODS SUB-PAGE -->
+      <div id="ot-sub-periods" style="display:none">
+        <div class="form-card">
+          <h3>Add Covering Period</h3>
+          <div class="ot-meta-grid">
+            <div class="fg" style="margin:0">
+              <label>Period Start</label>
+              <input id="otp-start" type="date" onchange="otpAutoLabel()"/>
+            </div>
+            <div class="fg" style="margin:0">
+              <label>Period End</label>
+              <input id="otp-end" type="date" onchange="otpAutoLabel()"/>
+            </div>
+            <div class="fg" style="margin:0">
+              <label>Covering Period Label</label>
+              <input id="otp-label" type="text" placeholder="e.g. Jan 05 - Jan 18, 2026" autocomplete="off"/>
+              <div style="font-size:10.5px;color:var(--text3);margin-top:4px">Auto-filled from the dates — you can edit it</div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="otpAdd()">
+              <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Covering Period
+            </button>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-toolbar"><h3>Covering Periods</h3><span class="badge" id="otp-count">0</span></div>
+          <div class="table-wrap"><table><thead><tr>
+            <th>#</th><th style="text-align:left">Covering Period</th><th>Start</th><th>End</th><th>Year</th><th>Del</th>
+          </tr></thead><tbody id="otp-tbody"><tr class="empty-row"><td colspan="6">No covering periods yet.</td></tr></tbody></table></div>
         </div>
       </div>
 
@@ -1759,13 +1796,15 @@ async function otCloudPull(){
 }
 
 // ── Sub-nav ───────────────────────────────────────────────────────────
-const OT_SUBS=['upload','exec','dept','cc','emp','hist','rpt'];
+const OT_SUBS=['upload','periods','exec','dept','cc','emp','hist','rpt'];
 
 function otShowSub(name){
   OT_SUBS.forEach(s=>{
     document.getElementById('ot-sub-'+s).style.display=(s===name?'block':'none');
     document.getElementById('otsub-'+s).classList.toggle('active',s===name);
   });
+  if(name==='upload')otPopulateUploadPeriods();
+  if(name==='periods')otpRender();
   if(name==='exec')otRenderExec();
   if(name==='dept')otRenderDept();
   if(name==='cc')otRenderCC();
@@ -1776,7 +1815,7 @@ function otShowSub(name){
 
 function otInitPage(){
   // Pull latest data from Firebase first, then render
-  otCloudPull().then(()=>{
+  Promise.all([otCloudPull(),otpCloudPull()]).then(()=>{
     const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff'];
     affSelectors.forEach(id=>{
       const el=document.getElementById(id);
@@ -1787,9 +1826,119 @@ function otInitPage(){
       if(cur)el.value=cur;
     });
     otPopulatePeriodDropdowns();
+    otPopulateUploadPeriods();
     const anyActive=OT_SUBS.some(s=>document.getElementById('ot-sub-'+s).style.display==='block');
     if(!anyActive)otShowSub('upload');
   });
+}
+
+// ── Covering periods (reference list for uploads) ─────────────────────
+const OTP_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/ot_periods.json';
+
+function otpLoad(){return JSON.parse(localStorage.getItem('ot_periods')||'[]');}
+function otpSave(arr){
+  localStorage.setItem('ot_periods',JSON.stringify(arr));
+  otpCloudSave(arr);
+}
+async function otpCloudSave(arr){
+  try{
+    await fetch(OTP_FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(arr)});
+  }catch(e){console.warn('Periods cloud save failed',e);}
+}
+async function otpCloudPull(){
+  try{
+    const res=await fetch(OTP_FB_URL);
+    if(!res.ok)return;
+    const data=await res.json();
+    if(Array.isArray(data)&&data.length){
+      localStorage.setItem('ot_periods',JSON.stringify(data));
+    }
+  }catch(e){console.warn('Periods cloud pull failed',e);}
+}
+
+function otpSorted(){
+  return[...otpLoad()].sort((a,b)=>(b.start||'').localeCompare(a.start||''));
+}
+
+function otpFmtDate(d){ // '2026-01-05' -> 'Jan 05'
+  const dt=new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-US',{month:'short',day:'2-digit'});
+}
+
+function otpAutoLabel(){
+  const s=document.getElementById('otp-start').value;
+  const e=document.getElementById('otp-end').value;
+  if(!s||!e)return;
+  const sy=s.substring(0,4),ey=e.substring(0,4);
+  document.getElementById('otp-label').value=
+    sy===ey?`${otpFmtDate(s)} - ${otpFmtDate(e)}, ${ey}`
+           :`${otpFmtDate(s)}, ${sy} - ${otpFmtDate(e)}, ${ey}`;
+}
+
+function otpAdd(){
+  const start=document.getElementById('otp-start').value;
+  const end=document.getElementById('otp-end').value;
+  const label=document.getElementById('otp-label').value.trim();
+  if(!start){toast('Please select a Period Start date.','error');return;}
+  if(!end){toast('Please select a Period End date.','error');return;}
+  if(end<start){toast('Period End must be after Period Start.','error');return;}
+  if(!label){toast('Covering Period label is required.','error');return;}
+  const periods=otpLoad();
+  if(periods.some(p=>p.label===label)){toast('This covering period already exists.','error');return;}
+  periods.push({id:Date.now(),label,start,end});
+  otpSave(periods);
+  document.getElementById('otp-start').value='';
+  document.getElementById('otp-end').value='';
+  document.getElementById('otp-label').value='';
+  otpRender();
+  otPopulateUploadPeriods();
+  toast('Covering period added ✓','success');
+}
+
+function otpDelete(id){
+  otpSave(otpLoad().filter(p=>p.id!==id));
+  otpRender();
+  otPopulateUploadPeriods();
+  toast('Covering period deleted');
+}
+
+function otpRender(){
+  const periods=otpSorted();
+  document.getElementById('otp-count').textContent=periods.length;
+  const tbody=document.getElementById('otp-tbody');
+  if(!periods.length){
+    tbody.innerHTML='<tr class="empty-row"><td colspan="6">No covering periods yet. Add one above — it will appear in the Upload dropdown.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=periods.map((p,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
+      <td class="name-cell">${p.label}</td>
+      <td class="date-cell">${p.start||'—'}</td>
+      <td class="date-cell">${p.end||'—'}</td>
+      <td>${p.start?p.start.substring(0,4):'—'}</td>
+      <td><button class="del-btn" onclick="otpDelete(${p.id})" title="Delete">✕</button></td>
+    </tr>`).join('');
+}
+
+function otPopulateUploadPeriods(){
+  const el=document.getElementById('ot-up-period');
+  if(!el)return;
+  const cur=el.value;
+  while(el.options.length>1)el.remove(1);
+  otpSorted().forEach(p=>{
+    const o=document.createElement('option');o.value=p.label;o.textContent=p.label;el.appendChild(o);
+  });
+  if(cur)el.value=cur;
+}
+
+function otUpPeriodChange(){
+  const label=document.getElementById('ot-up-period').value;
+  const p=otpLoad().find(x=>x.label===label);
+  if(p){
+    document.getElementById('ot-up-start').value=p.start||'';
+    document.getElementById('ot-up-end').value=p.end||'';
+  }
 }
 
 function otPopulatePeriodDropdowns(){
@@ -2050,7 +2199,7 @@ function otSaveImport(){
   const periodStart=document.getElementById('ot-up-start').value;
   const periodEnd=document.getElementById('ot-up-end').value;
   if(!affiliate){toast('Please select an Affiliate.','error');return;}
-  if(!periodLabel){toast('Please enter a Period Label.','error');return;}
+  if(!periodLabel){toast('Please select a Covering Period. Add one in the Covering Periods tab if the list is empty.','error');return;}
 
   const imports=otLoad();
   const dupIdx=imports.findIndex(i=>i.affiliate===affiliate&&i.periodLabel===periodLabel);

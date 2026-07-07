@@ -288,6 +288,17 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .ot-filters label{display:block;font-size:10.5px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
 .ot-bar-section{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:18px}
 .ot-bar-section h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+/* FORMATTED OT REPORT (cut-off / department / cost center / employee layout) */
+.otr-table{width:100%;border-collapse:collapse}
+.otr-table td{border:1px solid #a7bfae;padding:6px 12px;font-size:12px;text-align:center;color:var(--text)}
+.otr-table .empty-row td{border:none}
+.otr-hdr{background:#2e8540;color:#fff;font-weight:800;text-align:left!important;font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;min-width:200px}
+.otr-subhdr{background:#d9ead3;color:#1e4d2b;font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;width:130px}
+.otr-cut-val{background:#e8edf5;font-weight:800;font-size:13px;color:var(--navy)}
+.otr-name{text-align:left!important;font-weight:600}
+.otr-num{font-family:'DM Mono',monospace;font-size:11.5px}
+.otr-alert{background:#f3aeae;color:#7f1d1d;font-weight:700}
+.otr-spacer td{border:none!important;background:transparent;padding:5px}
 .ot-empty{text-align:center;padding:48px 24px;color:var(--text3)}
 .ot-empty svg{width:48px;height:48px;fill:var(--border);margin-bottom:14px}
 .ot-empty p{font-size:13px}
@@ -758,28 +769,25 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 
       <!-- REPORTS SUB-PAGE -->
       <div id="ot-sub-rpt" style="display:none">
-        <div class="ot-filters">
-          <div><label>Affiliate</label><select id="ot-rpt-aff" onchange="otRenderRpt()"><option value="">All</option></select></div>
-          <div><label>Period</label><select id="ot-rpt-period" onchange="otRenderRpt()"><option value="">All</option></select></div>
-          <div><label>Department</label><select id="ot-rpt-dept" onchange="otRenderRpt()"><option value="">All</option></select></div>
-          <div><label>Cost Center</label><select id="ot-rpt-cc" onchange="otRenderRpt()"><option value="">All</option></select></div>
-          <div><label>Search</label><input id="ot-rpt-search" placeholder="Search employee…" oninput="otRenderRpt()"/></div>
+        <div class="ot-filters" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
+          <div><label>Year</label><select id="ot-rpt-year" onchange="otRptYearChange()"><option value="">All Years</option></select></div>
+          <div><label>Covering Period</label><select id="ot-rpt-period" onchange="otRenderRpt()"><option value="">All Periods</option></select></div>
+          <div><label>Affiliate</label><select id="ot-rpt-aff" onchange="otRenderRpt()"><option value="">All Affiliates</option></select></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn btn-green" onclick="otExportExcel()" style="width:100%;justify-content:center">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg> Export Excel
+            </button>
+          </div>
         </div>
         <div class="ot-kpi-row" id="ot-rpt-kpis"></div>
         <div class="table-card">
           <div class="table-toolbar">
-            <h3>Report Results</h3>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span class="badge" id="ot-rpt-count">—</span>
-              <button class="btn btn-green" onclick="otExportExcel()" style="font-size:11.5px;padding:6px 12px">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/></svg> Export Excel
-              </button>
-            </div>
+            <h3>Overtime Report</h3>
+            <span class="badge" id="ot-rpt-count">—</span>
           </div>
-          <div class="table-wrap"><table><thead><tr>
-            <th>#</th><th style="text-align:left">Employee Name</th><th>Department</th><th>Cost Center</th>
-            <th>Affiliate</th><th>Period</th><th>Reg Hrs</th><th>OT Hrs</th><th>Total Hrs</th><th>OT %</th>
-          </tr></thead><tbody id="ot-rpt-tbody"><tr class="empty-row"><td colspan="10">Use the filters above to view data.</td></tr></tbody></table></div>
+          <div class="table-wrap" style="max-height:none">
+            <table class="otr-table"><tbody id="ot-rpt-tbody"><tr class="empty-row"><td colspan="4">Use the filters above to view data.</td></tr></tbody></table>
+          </div>
         </div>
       </div>
 
@@ -1787,7 +1795,7 @@ function otInitPage(){
 function otPopulatePeriodDropdowns(){
   const imports=otLoad();
   const periods=[...new Set(imports.map(i=>i.periodLabel).filter(Boolean))].sort().reverse();
-  const periodSelectors=['ot-exec-period','ot-dept-period','ot-cc-period','ot-emp-period','ot-rpt-period'];
+  const periodSelectors=['ot-exec-period','ot-dept-period','ot-cc-period','ot-emp-period'];
   periodSelectors.forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
@@ -1796,6 +1804,7 @@ function otPopulatePeriodDropdowns(){
     periods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;el.appendChild(o);});
     if(cur)el.value=cur;
   });
+  otPopulateRptFilters();
 }
 
 // ── File handling ─────────────────────────────────────────────────────
@@ -2226,13 +2235,13 @@ function otRenderEmp(){
   const allEmps=otFlatEmployees(otGetFiltered(aff,period),'','','');
   const depts=[...new Set(allEmps.map(e=>e.department).filter(Boolean))].sort();
   const ccs=[...new Set(allEmps.map(e=>e.costCenter).filter(Boolean))].sort();
-  ['ot-emp-dept','ot-rpt-dept'].forEach(id=>{
+  ['ot-emp-dept'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const cur=el.value;while(el.options.length>1)el.remove(1);
     depts.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;el.appendChild(o);});
     if(cur)el.value=cur;
   });
-  ['ot-emp-cc','ot-rpt-cc'].forEach(id=>{
+  ['ot-emp-cc'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const cur=el.value;while(el.options.length>1)el.remove(1);
     ccs.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el.appendChild(o);});
@@ -2318,155 +2327,207 @@ function otDeleteImport(id){
 }
 
 // ── Reports ───────────────────────────────────────────────────────────
-function otRenderRpt(){
-  const aff=document.getElementById('ot-rpt-aff').value;
-  const period=document.getElementById('ot-rpt-period').value;
-  const dept=document.getElementById('ot-rpt-dept').value;
-  const cc=document.getElementById('ot-rpt-cc').value;
-  const q=(document.getElementById('ot-rpt-search').value||'').toLowerCase();
-  const filtered=otGetFiltered(aff,period);
-  const rows=otFlatEmployees(filtered,dept,cc,q);
-  document.getElementById('ot-rpt-count').textContent=rows.length+' rows';
+const OT_ALERT_HRS=14; // employee OT hrs at/above this per cut-off are flagged red
 
-  const totalReg=round2(rows.reduce((s,e)=>s+e.regularHours,0));
-  const totalOT=round2(rows.reduce((s,e)=>s+e.overtimeHours,0));
-  const totalHrs=round2(totalReg+totalOT);
-  const otPct=totalHrs>0?round2((totalOT/totalHrs)*100):0;
+function otImportYear(imp){
+  const d=imp.periodStart||imp.periodEnd;
+  if(d)return String(d).substring(0,4);
+  const m=(imp.periodLabel||'').match(/(19|20)\d{2}/);
+  if(m)return m[0];
+  return imp.uploadedAt?String(imp.uploadedAt).substring(0,4):'';
+}
+
+function otPopulateRptFilters(){
+  const yearSel=document.getElementById('ot-rpt-year');
+  const periodSel=document.getElementById('ot-rpt-period');
+  if(!yearSel||!periodSel)return;
+  const imports=otLoad();
+  const curYear=yearSel.value;
+  const years=[...new Set(imports.map(otImportYear).filter(Boolean))].sort().reverse();
+  while(yearSel.options.length>1)yearSel.remove(1);
+  years.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;yearSel.appendChild(o);});
+  if(curYear&&years.includes(curYear))yearSel.value=curYear;
+  // Covering periods depend on the selected year
+  const selYear=yearSel.value;
+  const curPeriod=periodSel.value;
+  const periods=[...new Set(imports.filter(i=>!selYear||otImportYear(i)===selYear).map(i=>i.periodLabel).filter(Boolean))].sort().reverse();
+  while(periodSel.options.length>1)periodSel.remove(1);
+  periods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;periodSel.appendChild(o);});
+  if(curPeriod&&periods.includes(curPeriod))periodSel.value=curPeriod;
+}
+
+function otRptYearChange(){
+  document.getElementById('ot-rpt-period').value='';
+  otPopulateRptFilters();
+  otRenderRpt();
+}
+
+function otRptGetData(){
+  const year=document.getElementById('ot-rpt-year').value;
+  const period=document.getElementById('ot-rpt-period').value;
+  const aff=document.getElementById('ot-rpt-aff').value;
+  let imports=otLoad();
+  if(year)imports=imports.filter(i=>otImportYear(i)===year);
+  if(period)imports=imports.filter(i=>i.periodLabel===period);
+  if(aff)imports=imports.filter(i=>i.affiliate===aff);
+  const employees=otFlatEmployees(imports,'','','');
+  const periods=[...new Set(imports.map(i=>i.periodLabel).filter(Boolean))];
+  const cutoff=period||(periods.length===1?periods[0]:periods.length?periods.length+' cut-off periods':'—');
+  return{year,period,aff,imports,employees,cutoff};
+}
+
+// Aggregate rows by key; OT % matches the report format: OT hrs / Regular hrs
+function otRptAggregate(employees,key){
+  const map={};
+  employees.forEach(e=>{
+    const k=e[key]||'(Unassigned)';
+    if(!map[k])map[k]={label:k,reg:0,ot:0};
+    map[k].reg=round2(map[k].reg+e.regularHours);
+    map[k].ot=round2(map[k].ot+e.overtimeHours);
+  });
+  return Object.values(map)
+    .map(m=>({...m,pct:m.reg>0?round2((m.ot/m.reg)*100):0}))
+    .sort((a,b)=>a.label.localeCompare(b.label));
+}
+
+function otRenderRpt(){
+  otPopulateRptFilters();
+  const{aff,employees,cutoff}=otRptGetData();
+  const empCount=new Set(employees.map(e=>e.name)).size;
+  document.getElementById('ot-rpt-count').textContent=empCount+' employee'+(empCount!==1?'s':'');
+
+  const totalReg=round2(employees.reduce((s,e)=>s+e.regularHours,0));
+  const totalOT=round2(employees.reduce((s,e)=>s+e.overtimeHours,0));
+  const otPct=totalReg>0?round2((totalOT/totalReg)*100):0;
   document.getElementById('ot-rpt-kpis').innerHTML=`
-    <div class="ot-kpi"><div class="kl">Employees</div><div class="kv">${rows.length}</div><div class="ks">in results</div></div>
-    <div class="ot-kpi green"><div class="kl">Reg Hours</div><div class="kv">${fmtNum(totalReg)}</div><div class="ks">hrs</div></div>
-    <div class="ot-kpi gold"><div class="kl">OT Hours</div><div class="kv">${fmtNum(totalOT)}</div><div class="ks">hrs</div></div>
-    <div class="ot-kpi red"><div class="kl">OT Rate</div><div class="kv">${fmtNum(otPct)}%</div><div class="ks">OT / Total</div></div>
+    <div class="ot-kpi"><div class="kl">Employees</div><div class="kv">${empCount}</div><div class="ks">in results</div></div>
+    <div class="ot-kpi green"><div class="kl">Regular Hours</div><div class="kv">${fmtNum(totalReg)}</div><div class="ks">hrs</div></div>
+    <div class="ot-kpi gold"><div class="kl">Overtime Hours</div><div class="kv">${fmtNum(totalOT)}</div><div class="ks">hrs</div></div>
+    <div class="ot-kpi red"><div class="kl">OT Percentage</div><div class="kv">${fmtNum(otPct)}%</div><div class="ks">OT / Regular hrs</div></div>
   `;
 
   const tbody=document.getElementById('ot-rpt-tbody');
-  if(!rows.length){tbody.innerHTML='<tr class="empty-row"><td colspan="10">No records match the selected filters.</td></tr>';return;}
-  tbody.innerHTML=rows.map((e,i)=>`
-    <tr>
-      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">${i+1}</td>
-      <td class="name-cell">${e.name}</td>
-      <td>${e.department||'—'}</td>
-      <td>${e.costCenter||'—'}</td>
-      <td><span class="aff-badge">${e.affiliate}</span></td>
-      <td style="font-size:11px;color:var(--text2)">${e.periodLabel}</td>
-      <td class="num-cell">${fmtNum(e.regularHours)}</td>
-      <td class="num-cell">${fmtNum(e.overtimeHours)}</td>
-      <td class="total-cell">${fmtNum(e.totalHours)}</td>
-      <td class="num-cell">${fmtNum(e.otPercentage)}%</td>
-    </tr>`).join('');
+  if(!employees.length){tbody.innerHTML='<tr class="empty-row"><td colspan="4">No records match the selected filters.</td></tr>';return;}
+
+  const pctFmt=p=>p.toFixed(2)+'%';
+  const spacer='<tr class="otr-spacer"><td colspan="4"></td></tr>';
+  const secHdr=t=>`<tr><td class="otr-hdr">${t}</td><td class="otr-subhdr">Regular<br>Hrs</td><td class="otr-subhdr">Overtime<br>Hrs</td><td class="otr-subhdr">Overtime<br>Percentage</td></tr>`;
+  const dataRow=(m,alert)=>`<tr>
+      <td class="otr-name">${m.label}</td>
+      <td class="otr-num">${fmtNum(m.reg)}</td>
+      <td class="otr-num${alert&&m.ot>=OT_ALERT_HRS?' otr-alert':''}">${m.ot?fmtNum(m.ot):'0'}</td>
+      <td class="otr-num">${pctFmt(m.pct)}</td>
+    </tr>`;
+
+  let html=`<tr><td class="otr-hdr">CUT-OFF PERIOD</td><td class="otr-cut-val" colspan="3">${cutoff}${aff?' &nbsp;·&nbsp; '+aff:''}</td></tr>`+spacer;
+  html+=secHdr('DEPARTMENT')+otRptAggregate(employees,'department').map(m=>dataRow(m,false)).join('')+spacer;
+  html+=secHdr('COST CENTER')+otRptAggregate(employees,'costCenter').map(m=>dataRow(m,false)).join('')+spacer;
+  html+=secHdr('EMPLOYEE')+otRptAggregate(employees,'name').map(m=>dataRow(m,true)).join('');
+  tbody.innerHTML=html;
 }
 
-// ── OT Excel Export ───────────────────────────────────────────────────
+// ── OT Excel Export (cut-off / department / cost center / employee format) ──
 async function otExportExcel(){
-  const aff=document.getElementById('ot-rpt-aff').value;
-  const period=document.getElementById('ot-rpt-period').value;
-  const dept=document.getElementById('ot-rpt-dept').value;
-  const cc=document.getElementById('ot-rpt-cc').value;
-  const q=(document.getElementById('ot-rpt-search').value||'').toLowerCase();
-  const filtered=otGetFiltered(aff,period);
-  const rows=otFlatEmployees(filtered,dept,cc,q);
-  if(!rows.length){toast('No data to export.','error');return;}
+  const{year,period,aff,employees,cutoff}=otRptGetData();
+  if(!employees.length){toast('No data to export.','error');return;}
   toast('Preparing OT Excel export…','');
 
   const wb=new ExcelJS.Workbook();
   wb.creator='PGB Timekeeping Monitoring';wb.created=new Date();
   const ws=wb.addWorksheet('OT Report',{
-    pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1}
+    pageSetup:{paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1}
   });
 
-  const C={navy:'0D1F3C',navy2:'1A3560',blue:'1A56A8',gold:'F59E0B',white:'FFFFFF',off:'F7F9FC',border:'B0C4D8',text3:'8DA0B5'};
-  const med={style:'medium',color:{argb:'FF'+C.navy}};
+  const C={green:'2E8540',greenLight:'D9EAD3',greenText:'1E4D2B',white:'FFFFFF',gray:'E8EDF5',navy:'0D1F3C',red:'EA9999',redText:'7F1D1D',border:'8FA898',text:'0F1E30',text3:'8DA0B5'};
   const thin={style:'thin',color:{argb:'FF'+C.border}};
+  const box={top:thin,bottom:thin,left:thin,right:thin};
 
-  ws.columns=[
-    {key:'seq',width:5},{key:'name',width:30},{key:'dept',width:22},{key:'cc',width:18},
-    {key:'aff',width:14},{key:'period',width:22},{key:'reg',width:12},{key:'ot',width:12},
-    {key:'total',width:12},{key:'otpct',width:10}
-  ];
+  ws.columns=[{width:36},{width:13},{width:13},{width:16}];
 
-  // Title
-  ws.mergeCells('A1:J1');
-  const tc=ws.getCell('A1');
-  tc.value='OVERTIME MONITORING REPORT';
-  tc.font={name:'Arial',bold:true,size:14,color:{argb:'FF'+C.white}};
-  tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.navy}};
-  tc.alignment={horizontal:'center',vertical:'middle'};
-  ws.getRow(1).height=28;
+  let r=1;
 
-  // Subtitle
-  ws.mergeCells('A2:J2');
-  const sc=ws.getCell('A2');
-  const now=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
-  sc.value=`Affiliate: ${aff||'All'}  |  Period: ${period||'All'}  |  Generated: ${now}`;
-  sc.font={name:'Arial',size:9,italic:true,color:{argb:'FF'+C.white}};
-  sc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.navy2}};
-  sc.alignment={horizontal:'center',vertical:'middle'};
-  ws.getRow(2).height=18;
+  // CUT-OFF PERIOD banner
+  {
+    const row=ws.getRow(r);row.height=22;
+    const c1=row.getCell(1);
+    c1.value='CUT-OFF PERIOD';
+    c1.font={name:'Arial',bold:true,size:10,color:{argb:'FF'+C.white}};
+    c1.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.green}};
+    c1.alignment={horizontal:'left',vertical:'middle'};
+    c1.border=box;
+    for(let c=2;c<=4;c++)ws.getCell(r,c).border=box;
+    ws.mergeCells(r,2,r,4);
+    const c2=ws.getCell(r,2);
+    c2.value=cutoff+(aff?'  ·  '+aff:'');
+    c2.font={name:'Arial',bold:true,size:10,color:{argb:'FF'+C.navy}};
+    c2.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.gray}};
+    c2.alignment={horizontal:'center',vertical:'middle'};
+    r+=2;
+  }
 
-  // Headers
-  const HDRS=['#','EMPLOYEE NAME','DEPARTMENT','COST CENTER','AFFILIATE','PERIOD','REG HRS','OT HRS','TOTAL HRS','OT %'];
-  const hdr=ws.getRow(3);hdr.height=26;
-  HDRS.forEach((h,i)=>{
-    const cell=hdr.getCell(i+1);
-    cell.value=h;
-    cell.font={name:'Arial',bold:true,size:9,color:{argb:'FF'+C.white}};
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.navy}};
-    cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
-    cell.border={top:med,bottom:med,left:i===0?med:thin,right:i===9?med:thin};
-  });
-  hdr.getCell(2).alignment={horizontal:'left',vertical:'middle'};
-
-  // Data rows
-  const NUM_FMT='#,##0.##;-#,##0.##;"-"';
-  rows.forEach((e,i)=>{
-    const row=ws.addRow([i+1,e.name,e.department||'',e.costCenter||'',e.affiliate,e.periodLabel,
-      e.regularHours,e.overtimeHours,e.totalHours,e.otPercentage]);
-    row.height=16;
-    const bg=i%2===0?C.off:C.white;
-    row.eachCell((cell,cn)=>{
-      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+bg}};
-      cell.font={name:'Arial',size:9};
-      cell.border={top:thin,bottom:thin,left:cn===1?med:thin,right:cn===10?med:thin};
-      cell.alignment={vertical:'middle',horizontal:cn>6?'center':'left'};
-      if(cn>6)cell.numFmt=NUM_FMT;
+  const secHeader=title=>{
+    const row=ws.getRow(r);row.height=26;
+    const c1=row.getCell(1);
+    c1.value=title;
+    c1.font={name:'Arial',bold:true,size:10,color:{argb:'FF'+C.white}};
+    c1.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.green}};
+    c1.alignment={horizontal:'left',vertical:'middle'};
+    c1.border=box;
+    ['REGULAR\nHRS','OVERTIME\nHRS','OVERTIME\nPERCENTAGE'].forEach((h,i)=>{
+      const c=row.getCell(2+i);
+      c.value=h;
+      c.font={name:'Arial',bold:true,size:8.5,color:{argb:'FF'+C.greenText}};
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.greenLight}};
+      c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+      c.border=box;
     });
-    // Name left-aligned bold
-    row.getCell(2).font={name:'Arial',size:9,bold:true,color:{argb:'FF'+C.navy}};
-    row.getCell(2).alignment={horizontal:'left',vertical:'middle'};
-  });
+    r++;
+  };
 
-  // Grand total
-  const tReg=round2(rows.reduce((s,e)=>s+e.regularHours,0));
-  const tOT=round2(rows.reduce((s,e)=>s+e.overtimeHours,0));
-  const tAll=round2(tReg+tOT);
-  const gtRow=ws.addRow(['','GRAND TOTAL','','','','',tReg,tOT,tAll,tAll>0?round2((tOT/tAll)*100):0]);
-  gtRow.height=22;
-  gtRow.eachCell((cell,cn)=>{
-    cell.font={name:'Arial',bold:true,size:10,color:{argb:'FF'+C.white}};
-    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.blue}};
-    cell.border={top:med,bottom:med,left:cn===1?med:thin,right:cn===10?med:thin};
-    cell.alignment={vertical:'middle',horizontal:cn>6?'center':'left'};
-    if(cn>6)cell.numFmt=NUM_FMT;
-  });
-  gtRow.getCell(2).alignment={horizontal:'left',vertical:'middle'};
+  const dataRows=(list,highlight)=>{
+    list.forEach(m=>{
+      const row=ws.getRow(r);row.height=16;
+      [m.label,m.reg,m.ot,m.pct/100].forEach((v,i)=>{
+        const c=row.getCell(1+i);
+        c.value=v;
+        c.font={name:'Arial',size:9,color:{argb:'FF'+C.text}};
+        c.alignment={horizontal:i===0?'left':'center',vertical:'middle'};
+        c.border=box;
+        if(i===3)c.numFmt='0.00%';
+        else if(i>0)c.numFmt='#,##0.##';
+      });
+      if(highlight&&m.ot>=OT_ALERT_HRS){
+        const c=row.getCell(3);
+        c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.red}};
+        c.font={name:'Arial',size:9,bold:true,color:{argb:'FF'+C.redText}};
+      }
+      r++;
+    });
+    r++; // spacer row between sections
+  };
 
-  // Footer
-  ws.addRow([]);
-  const footerRow=ws.addRow([`This report was generated by PGB Timekeeping Monitoring Dashboard on ${now}. Total rows: ${rows.length}.`]);
-  ws.mergeCells(footerRow.number,1,footerRow.number,10);
-  footerRow.getCell(1).font={name:'Arial',size:8,italic:true,color:{argb:'FF'+C.text3}};
-  footerRow.getCell(1).alignment={horizontal:'center',vertical:'middle'};
+  secHeader('DEPARTMENT');  dataRows(otRptAggregate(employees,'department'),false);
+  secHeader('COST CENTER'); dataRows(otRptAggregate(employees,'costCenter'),false);
+  secHeader('EMPLOYEE');    dataRows(otRptAggregate(employees,'name'),true);
+
+  // Footer note
+  const now=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'});
+  ws.mergeCells(r,1,r,4);
+  const foot=ws.getCell(r,1);
+  foot.value=`Generated by PGB Timekeeping Monitoring Dashboard on ${now}.`;
+  foot.font={name:'Arial',size:8,italic:true,color:{argb:'FF'+C.text3}};
+  foot.alignment={horizontal:'center',vertical:'middle'};
 
   const buf=await wb.xlsx.writeBuffer();
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;
-  const affStr=(aff||'all').replace(/\s+/g,'_');
-  const pStr=(period||'all').replace(/[^a-zA-Z0-9_-]/g,'').substring(0,30);
+  const affStr=(aff||'All').replace(/\s+/g,'_');
+  const pStr=(period||year||'all').replace(/[^a-zA-Z0-9_-]/g,'').substring(0,30);
   a.download=`OT_Report_${affStr}_${pStr}.xlsx`;
   document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url);
-  toast('OT Excel exported — '+rows.length+' rows ✓','success');
+  toast('OT report exported ✓','success');
 }
 // ── END OVERTIME MONITORING MODULE ────────────────────────────────────
 </script>

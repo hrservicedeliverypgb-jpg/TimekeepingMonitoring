@@ -1885,7 +1885,10 @@ function otParseWorkbook(buffer,fileName){
   try{
     const wb=XLSX.read(buffer,{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
-    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
+    // blankrows:true keeps empty rows so raw[] indices line up with the sheet
+    // row numbers used to locate the RGOT header (blank title/spacer rows would
+    // otherwise shift the data and silently drop the first employee rows)
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:true});
     if(!raw.length){toast('Spreadsheet appears to be empty.','error');return;}
 
     // Find RGOT and ABSHRS by scanning cell addresses directly — no keyword thresholds.

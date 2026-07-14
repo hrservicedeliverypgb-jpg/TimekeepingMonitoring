@@ -48,14 +48,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--off);color:var(--text);mi
 .ptl-brand{text-align:center;margin-bottom:1rem}
 .ptl-primary{display:block;font-size:2.1rem;font-weight:900;font-style:italic;color:var(--navy);letter-spacing:-1px;line-height:1}
 .ptl-gob{display:block;font-size:.82rem;font-weight:800;font-style:italic;color:var(--gold);letter-spacing:5px;line-height:1.6;text-transform:uppercase}
-.ptl-aff-strip{border:1px solid var(--border);border-radius:10px;padding:.75rem}
-.ptl-aff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.ptl-aff{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 3px;border-radius:7px;border:1px solid var(--border);transition:box-shadow .18s,border-color .18s;text-align:center;gap:4px;min-height:64px}
-.ptl-aff:hover{box-shadow:0 2px 8px rgba(13,31,60,.1);border-color:var(--sky-light)}
+.ptl-aff-strip{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:white;padding:0}
+.ptl-aff-grid{display:grid;grid-template-columns:repeat(4,1fr)}
+.ptl-aff{display:flex;flex-direction:row;align-items:center;padding:8px 7px;gap:7px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background .15s;min-height:54px}
+.ptl-aff:nth-child(4n){border-right:none}
+.ptl-aff:nth-child(n+5){border-bottom:none}
+.ptl-aff:hover{background:rgba(59,130,246,.03)}
 .ptl-aff-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ptl-aff-icon svg{width:17px;height:17px}
-.ptl-aff-name b{font-size:9px;font-weight:700;color:var(--navy);line-height:1.2;display:block}
-.ptl-aff-name span{font-size:7.5px;color:var(--text2);display:block}
+.ptl-aff-name{display:flex;flex-direction:column;min-width:0;text-align:left}
+.ptl-aff-name b{font-size:8px;font-weight:800;color:var(--navy);line-height:1.3;display:block;text-transform:uppercase;letter-spacing:.2px}
+.ptl-aff-name span{font-size:7px;color:var(--text2);display:block;line-height:1.2}
+.ptl-aff-phi .ptl-aff-name i{font-size:6.5px;font-style:italic;color:var(--text3);display:block;margin-bottom:1px}
+.ptl-aff-phi .ptl-aff-name b{color:#0d9488;font-size:9px;letter-spacing:0}
+.ptl-aff-maayo{justify-content:center;flex-direction:column;gap:1px;padding:6px 9px}
+.ptl-maayo-main{font-size:14px;font-weight:300;letter-spacing:3px;color:#0d9488;line-height:1;text-transform:uppercase}
+.ptl-aff-maayo.hotel .ptl-maayo-main{color:#92400e}
+.ptl-maayo-sub{font-size:7px;letter-spacing:3.5px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-top:1px}
 /* Dark bottom section */
 .ptl-hero{background:#07101f;padding:1.5rem 1.6rem 1.7rem}
 .ptl-clock-box{width:50px;height:50px;border:2.5px solid var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;background:rgba(245,158,11,.1)}
@@ -344,9 +353,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
             <div class="ptl-aff-icon" style="background:#1a56a8"><svg viewBox="0 0 24 24"><path fill="white" d="M17 11H7V5l-5 7h5v7h10v-7h5z"/></svg></div>
             <div class="ptl-aff-name"><b>Primary Properties</b><span>Corporation</span></div>
           </div>
-          <div class="ptl-aff">
+          <div class="ptl-aff ptl-aff-phi">
             <div class="ptl-aff-icon" style="background:#2168c8"><svg viewBox="0 0 24 24"><path fill="white" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
-            <div class="ptl-aff-name"><b>PrimaryHomes</b><span>Inc.</span></div>
+            <div class="ptl-aff-name"><i>Your Reliable Partner,</i><b>PrimaryHomes</b></div>
           </div>
           <div class="ptl-aff">
             <div class="ptl-aff-icon" style="background:#047857"><svg viewBox="0 0 24 24"><path fill="white" d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg></div>
@@ -360,13 +369,13 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
             <div class="ptl-aff-icon" style="background:#16a34a"><svg viewBox="0 0 24 24"><path fill="white" d="M13 2.05v2.02c3.95.49 7 3.85 7 7.93 0 3.21-1.81 6-4.72 7.72L13 18v4h4l-1.22-1.22C18.91 19.07 21 15.76 21 12c0-5.18-3.95-9.45-9-9.95zm-2 0C5.95 2.55 2 6.82 2 12c0 3.76 2.09 7.07 5.22 8.78L6 22h4v-4l-2.28 1.72C5.81 18 4 15.21 4 12c0-4.08 3.05-7.44 7-7.93V2.05z"/></svg></div>
             <div class="ptl-aff-name"><b>ABC</b><span>Construction &amp; Dev.</span></div>
           </div>
-          <div class="ptl-aff">
-            <div class="ptl-aff-icon" style="background:#0891b2"><svg viewBox="0 0 24 24"><path fill="white" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-6.5 8H14v1.5h-1.5V14H11v-1.5H9.5V11H11V9.5h1.5V11z"/></svg></div>
-            <div class="ptl-aff-name"><b>Maayo Medical</b><span>Center</span></div>
+          <div class="ptl-aff ptl-aff-maayo">
+            <div class="ptl-maayo-main">MAAYO</div>
+            <div class="ptl-maayo-sub">MEDICAL</div>
           </div>
-          <div class="ptl-aff">
-            <div class="ptl-aff-icon" style="background:#b45309"><svg viewBox="0 0 24 24"><path fill="white" d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg></div>
-            <div class="ptl-aff-name"><b>Maayo Hotel</b><span>&amp; Suites</span></div>
+          <div class="ptl-aff ptl-aff-maayo hotel">
+            <div class="ptl-maayo-main">MAAYO</div>
+            <div class="ptl-maayo-sub">HOTEL</div>
           </div>
         </div>
       </div>

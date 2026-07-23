@@ -291,6 +291,24 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .exec-table tr:hover td:first-child{background:rgba(20,86,160,.07)}
 .exec-table td.exec-avail{color:var(--navy);font-weight:600}
 .exec-table td.exec-red{color:var(--red);font-weight:700}
+/* OT COMPARISON */
+.cmp-aff-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.cmp-aff-cb-label{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:background .15s,border-color .15s}
+.cmp-aff-cb-label:hover{background:#e8f0ff;border-color:var(--blue2)}
+.cmp-aff-cb-label input[type=checkbox]{accent-color:var(--blue2);width:14px;height:14px;cursor:pointer}
+.cmp-aff-cb-label.checked{background:#e8f0ff;border-color:var(--blue2);color:var(--navy)}
+.cmp-chart-svg-wrap{overflow-x:auto;margin-bottom:20px}
+.cmp-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.cmp-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text)}
+.cmp-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.cmp-metrics-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.cmp-metrics-table th{background:var(--navy);color:#fff;padding:8px 14px;text-align:center;font-size:11px;font-weight:700;white-space:nowrap}
+.cmp-metrics-table th:first-child{text-align:left;min-width:200px}
+.cmp-metrics-table td{padding:8px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2);font-size:12px}
+.cmp-metrics-table td:first-child{text-align:left;font-weight:600;color:var(--text);background:var(--bg)}
+.cmp-metrics-table td.cmp-highlight{color:var(--navy);font-weight:700}
+.cmp-metrics-table tr:hover td{background:rgba(20,86,160,.04)}
+.cmp-metrics-table tr:hover td:first-child{background:rgba(20,86,160,.07)}
 /* FORMATTED OT REPORT (cut-off / department / cost center / employee layout) */
 .otr-table{width:100%;border-collapse:collapse}
 .otr-table td{border:1px solid #a7bfae;padding:6px 12px;font-size:12px;text-align:center;color:var(--text)}
@@ -765,6 +783,17 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div><label>Period</label><select id="ot-exec-period" onchange="otRenderExec()"><option value="">All Periods</option></select></div>
         </div>
         <div id="ot-exec-content"></div>
+        <!-- OT COMPARISON -->
+        <div class="exec-section" style="margin-top:20px">
+          <div class="exec-section-title">D. OT Comparison by Affiliate</div>
+          <div class="exec-note" style="display:block;margin:4px 0 12px">Select affiliates to compare OT across all cut-off periods</div>
+          <div class="cmp-aff-row" id="cmp-aff-list"></div>
+          <button class="btn btn-primary" style="margin:12px 0 18px" onclick="otRenderComparison()">Compare Selected</button>
+          <div id="cmp-chart-wrap" style="display:none">
+            <div id="cmp-chart"></div>
+            <div id="cmp-metrics"></div>
+          </div>
+        </div>
       </div>
 
       <!-- DEPARTMENTS SUB-PAGE -->
@@ -2430,6 +2459,130 @@ function otRenderExec(){
         </tbody>
       </table></div>
     </div>`;
+
+  // Populate affiliate checkboxes for comparison section
+  const cmpList=document.getElementById('cmp-aff-list');
+  if(cmpList){
+    const existing=new Set([...cmpList.querySelectorAll('input')].map(i=>i.value));
+    affs.forEach(a=>{
+      if(existing.has(a))return;
+      const lbl=document.createElement('label');
+      lbl.className='cmp-aff-cb-label';
+      lbl.innerHTML=`<input type="checkbox" class="cmp-aff-cb" value="${a}"> ${a}`;
+      lbl.querySelector('input').addEventListener('change',function(){lbl.classList.toggle('checked',this.checked);});
+      cmpList.appendChild(lbl);
+    });
+  }
+}
+
+// ── OT Comparison ─────────────────────────────────────────────────────
+function otRenderComparison(){
+  const selected=[...document.querySelectorAll('.cmp-aff-cb:checked')].map(cb=>cb.value);
+  const wrap=document.getElementById('cmp-chart-wrap');
+  if(!selected.length){wrap.style.display='none';return;}
+
+  const allImports=otLoad();
+  const periods=[...new Set(allImports.map(i=>i.periodLabel))].sort();
+
+  // Build per-affiliate per-period aggregates
+  const aData={};
+  selected.forEach(aff=>{
+    aData[aff]={};
+    periods.forEach(p=>{
+      const imps=allImports.filter(i=>i.affiliate===aff&&i.periodLabel===p);
+      const emps=otFlatEmployees(imps,'','','');
+      if(!emps.length)return;
+      const ot=round2(emps.reduce((s,e)=>s+e.overtimeHours,0));
+      const total=round2(emps.reduce((s,e)=>s+e.totalHours,0));
+      aData[aff][p]={ot,total,otPct:total>0?round2((ot/total)*100):0};
+    });
+  });
+
+  // Periods that have data for at least one selected affiliate
+  const activePeriods=periods.filter(p=>selected.some(a=>aData[a][p]));
+
+  // ── Grouped bar chart (SVG) ──────────────────────────────────────────
+  const BAR_W=22,GAP=6,GRP_GAP=18,PAD_L=52,PAD_B=60,PAD_T=20,H=200;
+  const grpW=selected.length*(BAR_W+GAP)-GAP;
+  const svgW=PAD_L+activePeriods.length*(grpW+GRP_GAP)+GRP_GAP;
+  const maxOT=Math.max(...selected.flatMap(a=>activePeriods.map(p=>aData[a][p]?aData[a][p].ot:0)),1);
+  const yScale=v=>(H-(v/maxOT)*H);
+
+  let bars='',labels='',yAxis='';
+  for(let yi=0;yi<=4;yi++){
+    const val=round2((maxOT/4)*yi);
+    const y=H-yScale(maxOT-val)+PAD_T;
+    yAxis+=`<line x1="${PAD_L-4}" y1="${y}" x2="${svgW}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+    yAxis+=`<text x="${PAD_L-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#888">${fmtNum(val)}</text>`;
+  }
+
+  activePeriods.forEach((p,pi)=>{
+    const grpX=PAD_L+GRP_GAP/2+pi*(grpW+GRP_GAP);
+    selected.forEach((aff,ai)=>{
+      const d=aData[aff][p];
+      const ot=d?d.ot:0;
+      const bH=Math.max((ot/maxOT)*H,ot>0?2:0);
+      const bX=grpX+ai*(BAR_W+GAP);
+      const bY=PAD_T+H-bH;
+      const color=BAR_COLORS[ai%BAR_COLORS.length];
+      bars+=`<rect x="${bX}" y="${bY}" width="${BAR_W}" height="${bH}" fill="${color}" rx="3">
+        <title>${aff} — ${p}: ${fmtNum(ot)} hrs (${d?d.otPct:0}%)</title></rect>`;
+      if(ot>0)bars+=`<text x="${bX+BAR_W/2}" y="${bY-3}" text-anchor="middle" font-size="8" fill="${color}">${fmtNum(ot)}</text>`;
+    });
+    const lx=grpX+grpW/2;
+    const shortP=p.length>12?p.slice(0,11)+'…':p;
+    labels+=`<text x="${lx}" y="${PAD_T+H+14}" text-anchor="middle" font-size="9" fill="#555">${shortP}</text>`;
+  });
+
+  const legend=selected.map((a,i)=>`<div class="cmp-legend-item"><div class="cmp-legend-dot" style="background:${BAR_COLORS[i%BAR_COLORS.length]}"></div>${a}</div>`).join('');
+
+  // ── Per-affiliate metrics table ──────────────────────────────────────
+  const mRows=selected.map((aff,ai)=>{
+    const pdData=Object.entries(aData[aff]);
+    if(!pdData.length)return `<tr><td>${aff}</td><td colspan="5">No data</td></tr>`;
+    const totOT=round2(pdData.reduce((s,[,d])=>s+d.ot,0));
+    const totTotal=round2(pdData.reduce((s,[,d])=>s+d.total,0));
+    const avgOTPct=pdData.length>0?round2(pdData.reduce((s,[,d])=>s+d.otPct,0)/pdData.length):0;
+    const highEntry=pdData.reduce((max,[p,d])=>d.ot>max.ot?{p,ot:d.ot,pct:d.otPct}:max,{p:'—',ot:0,pct:0});
+    const highPct=totOT>0?fmtNum(round2((highEntry.ot/totOT)*100))+'%':'—';
+    const color=BAR_COLORS[ai%BAR_COLORS.length];
+    return `<tr>
+      <td style="border-left:3px solid ${color}">${aff}</td>
+      <td class="cmp-highlight">${fmtNum(totOT)} hrs</td>
+      <td class="cmp-highlight">${highEntry.p}</td>
+      <td>${fmtNum(highEntry.ot)} hrs</td>
+      <td>${fmtNum(avgOTPct)}%</td>
+      <td>${highPct}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('cmp-chart').innerHTML=`
+    <div class="cmp-legend">${legend}</div>
+    <div class="cmp-chart-svg-wrap">
+      <svg width="${svgW}" height="${H+PAD_T+PAD_B}" style="display:block">
+        ${yAxis}
+        <line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${PAD_T+H}" stroke="#ccc" stroke-width="1"/>
+        <line x1="${PAD_L}" y1="${PAD_T+H}" x2="${svgW}" y2="${PAD_T+H}" stroke="#ccc" stroke-width="1"/>
+        ${bars}${labels}
+      </svg>
+    </div>`;
+
+  document.getElementById('cmp-metrics').innerHTML=`
+    <div class="exec-table-wrap">
+      <table class="cmp-metrics-table">
+        <thead><tr>
+          <th>Affiliate</th>
+          <th>Total OT Hours</th>
+          <th>Highest OT Cut-off</th>
+          <th>Highest Cut-off OT</th>
+          <th>Avg OT % (all periods)</th>
+          <th>% of Highest vs Total OT</th>
+        </tr></thead>
+        <tbody>${mRows}</tbody>
+      </table>
+    </div>`;
+
+  wrap.style.display='block';
 }
 
 // ── Departments ───────────────────────────────────────────────────────

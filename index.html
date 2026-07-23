@@ -297,18 +297,30 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .cmp-aff-cb-label:hover{background:#e8f0ff;border-color:var(--blue2)}
 .cmp-aff-cb-label input[type=checkbox]{accent-color:var(--blue2);width:14px;height:14px;cursor:pointer}
 .cmp-aff-cb-label.checked{background:#e8f0ff;border-color:var(--blue2);color:var(--navy)}
-.cmp-chart-svg-wrap{overflow-x:auto;margin-bottom:20px}
-.cmp-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
-.cmp-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text)}
-.cmp-legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-.cmp-metrics-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
-.cmp-metrics-table th{background:var(--navy);color:#fff;padding:8px 14px;text-align:center;font-size:11px;font-weight:700;white-space:nowrap}
-.cmp-metrics-table th:first-child{text-align:left;min-width:200px}
-.cmp-metrics-table td{padding:8px 14px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2);font-size:12px}
-.cmp-metrics-table td:first-child{text-align:left;font-weight:600;color:var(--text);background:var(--bg)}
-.cmp-metrics-table td.cmp-highlight{color:var(--navy);font-weight:700}
-.cmp-metrics-table tr:hover td{background:rgba(20,86,160,.04)}
-.cmp-metrics-table tr:hover td:first-child{background:rgba(20,86,160,.07)}
+.cmp-kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:700px){.cmp-kpi-strip{grid-template-columns:repeat(2,1fr)}}
+.cmp-kpi-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid var(--blue2)}
+.cmp-kpi-tile.gold{border-top-color:var(--gold)}.cmp-kpi-tile.green{border-top-color:var(--green)}.cmp-kpi-tile.red{border-top-color:var(--red)}.cmp-kpi-tile.sky{border-top-color:var(--sky)}
+.cmp-kpi-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:5px;font-weight:700}
+.cmp-kpi-val{font-size:22px;font-weight:800;color:var(--navy);line-height:1;font-family:'DM Mono',monospace}
+.cmp-kpi-sub{font-size:10px;color:var(--text3);margin-top:4px}
+.cmp-line-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px}
+.cmp-line-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.cmp-line-title{font-size:13px;font-weight:700;color:var(--text)}
+.cmp-line-legend{display:flex;flex-wrap:wrap;gap:14px}
+.cmp-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2)}
+.cmp-legend-sq{width:24px;height:3px;border-radius:2px;flex-shrink:0}
+.cmp-line-svg-wrap{overflow-x:auto}
+.cmp-cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.cmp-affiliate-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;box-shadow:var(--shadow)}
+.cmp-card-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.cmp-card-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cmp-card-aff{font-size:15px;font-weight:800;color:var(--navy)}
+.cmp-card-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:14px}
+.cmp-stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:2px;font-weight:700}
+.cmp-stat-val{font-size:14px;font-weight:700;color:var(--text);font-family:'DM Mono',monospace;line-height:1.2}
+.cmp-mini-bars{display:flex;align-items:flex-end;gap:2px;height:40px;padding-top:4px}
+.cmp-mini-bar{flex:1;min-width:4px;border-radius:2px 2px 0 0}
 /* FORMATTED OT REPORT (cut-off / department / cost center / employee layout) */
 .otr-table{width:100%;border-collapse:collapse}
 .otr-table td{border:1px solid #a7bfae;padding:6px 12px;font-size:12px;text-align:center;color:var(--text)}
@@ -2483,6 +2495,7 @@ function otRenderComparison(){
 
   const allImports=otLoad();
   const periods=[...new Set(allImports.map(i=>i.periodLabel))].sort();
+  const shortL=p=>p.length>12?p.slice(0,11)+'…':p;
 
   // Build per-affiliate per-period aggregates
   const aData={};
@@ -2494,95 +2507,125 @@ function otRenderComparison(){
       if(!emps.length)return;
       const ot=round2(emps.reduce((s,e)=>s+e.overtimeHours,0));
       const total=round2(emps.reduce((s,e)=>s+e.totalHours,0));
-      aData[aff][p]={ot,total,otPct:total>0?round2((ot/total)*100):0};
+      const depts=new Set(emps.map(e=>e.department).filter(Boolean)).size;
+      aData[aff][p]={ot,total,otPct:total>0?round2((ot/total)*100):0,depts};
     });
   });
 
-  // Periods that have data for at least one selected affiliate
   const activePeriods=periods.filter(p=>selected.some(a=>aData[a][p]));
+  if(!activePeriods.length){wrap.style.display='none';return;}
 
-  // ── Grouped bar chart (SVG) ──────────────────────────────────────────
-  const BAR_W=22,GAP=6,GRP_GAP=18,PAD_L=52,PAD_B=60,PAD_T=20,H=200;
-  const grpW=selected.length*(BAR_W+GAP)-GAP;
-  const svgW=PAD_L+activePeriods.length*(grpW+GRP_GAP)+GRP_GAP;
-  const maxOT=Math.max(...selected.flatMap(a=>activePeriods.map(p=>aData[a][p]?aData[a][p].ot:0)),1);
-  const yScale=v=>(H-(v/maxOT)*H);
+  // ── KPI strip metrics ───────────────────────────────────────────────
+  const latestP=activePeriods[activePeriods.length-1];
+  const allLatest=otFlatEmployees(allImports.filter(i=>selected.includes(i.affiliate)&&i.periodLabel===latestP),'','','');
+  const latestOT=round2(allLatest.reduce((s,e)=>s+e.overtimeHours,0));
+  const latestTot=round2(allLatest.reduce((s,e)=>s+e.totalHours,0));
+  const latestPct=latestTot>0?round2((latestOT/latestTot)*100):0;
 
-  let bars='',labels='',yAxis='';
-  for(let yi=0;yi<=4;yi++){
-    const val=round2((maxOT/4)*yi);
-    const y=H-yScale(maxOT-val)+PAD_T;
-    yAxis+=`<line x1="${PAD_L-4}" y1="${y}" x2="${svgW}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
-    yAxis+=`<text x="${PAD_L-8}" y="${y+4}" text-anchor="end" font-size="10" fill="#888">${fmtNum(val)}</text>`;
+  const allSelEmps=otFlatEmployees(allImports.filter(i=>selected.includes(i.affiliate)),'','','');
+  const ytdOT=round2(allSelEmps.reduce((s,e)=>s+e.overtimeHours,0));
+  const deptCount=new Set(allSelEmps.map(e=>e.department).filter(Boolean)).size;
+
+  let sumAvg=0,cntAvg=0,peakP=activePeriods[0],peakPct=0;
+  activePeriods.forEach(p=>{
+    const pe=otFlatEmployees(allImports.filter(i=>selected.includes(i.affiliate)&&i.periodLabel===p),'','','');
+    const po=pe.reduce((s,e)=>s+e.overtimeHours,0);
+    const pt=pe.reduce((s,e)=>s+e.totalHours,0);
+    const pp=pt>0?round2((po/pt)*100):0;
+    if(pt>0){sumAvg+=pp;cntAvg++;}
+    if(pp>peakPct){peakPct=pp;peakP=p;}
+  });
+  const avgRate=cntAvg>0?round2(sumAvg/cntAvg):0;
+
+  const kpiTile=(lbl,val,sub,cls='')=>`
+    <div class="cmp-kpi-tile ${cls}">
+      <div class="cmp-kpi-lbl">${lbl}</div>
+      <div class="cmp-kpi-val">${val}</div>
+      <div class="cmp-kpi-sub">${sub}</div>
+    </div>`;
+
+  // ── SVG Line chart ──────────────────────────────────────────────────
+  const CW=900,CH=260,PL=54,PR=20,PT=30,PB=50;
+  const cW=CW-PL-PR,cH=CH-PT-PB;
+  const maxPct=Math.max(...selected.flatMap(a=>activePeriods.map(p=>aData[a][p]?aData[a][p].otPct:0)),1);
+  const yMax=Math.ceil(maxPct/5)*5+5;
+  const xS=i=>PL+(activePeriods.length>1?(i/(activePeriods.length-1))*cW:cW/2);
+  const yS=v=>PT+cH-(v/yMax)*cH;
+  const CLRS=['#1a56a8','#a855f7','#f59e0b','#059669','#d0435a','#2ea8c4','#8b5cf6','#c4742a'];
+
+  let grid='';
+  for(let y=0;y<=yMax;y+=5){
+    const sy=yS(y);
+    grid+=`<line x1="${PL}" y1="${sy}" x2="${CW-PR}" y2="${sy}" stroke="#e5e7eb" stroke-width="1"/>`;
+    grid+=`<text x="${PL-6}" y="${sy+4}" text-anchor="end" fill="#888" font-size="10">${y}%</text>`;
   }
-
-  activePeriods.forEach((p,pi)=>{
-    const grpX=PAD_L+GRP_GAP/2+pi*(grpW+GRP_GAP);
-    selected.forEach((aff,ai)=>{
-      const d=aData[aff][p];
-      const ot=d?d.ot:0;
-      const bH=Math.max((ot/maxOT)*H,ot>0?2:0);
-      const bX=grpX+ai*(BAR_W+GAP);
-      const bY=PAD_T+H-bH;
-      const color=BAR_COLORS[ai%BAR_COLORS.length];
-      bars+=`<rect x="${bX}" y="${bY}" width="${BAR_W}" height="${bH}" fill="${color}" rx="3">
-        <title>${aff} — ${p}: ${fmtNum(ot)} hrs (${d?d.otPct:0}%)</title></rect>`;
-      if(ot>0)bars+=`<text x="${bX+BAR_W/2}" y="${bY-3}" text-anchor="middle" font-size="8" fill="${color}">${fmtNum(ot)}</text>`;
-    });
-    const lx=grpX+grpW/2;
-    const shortP=p.length>12?p.slice(0,11)+'…':p;
-    labels+=`<text x="${lx}" y="${PAD_T+H+14}" text-anchor="middle" font-size="9" fill="#555">${shortP}</text>`;
+  activePeriods.forEach((p,i)=>{
+    grid+=`<text x="${xS(i)}" y="${PT+cH+16}" text-anchor="middle" fill="#888" font-size="9">${shortL(p)}</text>`;
   });
 
-  const legend=selected.map((a,i)=>`<div class="cmp-legend-item"><div class="cmp-legend-dot" style="background:${BAR_COLORS[i%BAR_COLORS.length]}"></div>${a}</div>`).join('');
+  let linesSvg='',dotsSvg='';
+  selected.forEach((aff,ai)=>{
+    const color=CLRS[ai%CLRS.length];
+    const pts=activePeriods.map((p,pi)=>{
+      const d=aData[aff][p];
+      if(!d)return null;
+      return{x:xS(pi),y:yS(d.otPct),pct:d.otPct,p};
+    }).filter(Boolean);
+    if(!pts.length)return;
+    if(pts.length===1){dotsSvg+=`<circle cx="${pts[0].x.toFixed(1)}" cy="${pts[0].y.toFixed(1)}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5"><title>${aff}: ${pts[0].pct}%</title></circle>`;return;}
+    linesSvg+=`<path d="${pts.map((pt,i)=>`${i===0?'M':'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ')}" stroke="${color}" stroke-width="2.5" fill="none"/>`;
+    pts.forEach(pt=>{dotsSvg+=`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="${color}" stroke="#fff" stroke-width="1.5"><title>${aff} — ${pt.p}: ${pt.pct}%</title></circle>`;});
+  });
 
-  // ── Per-affiliate metrics table ──────────────────────────────────────
-  const mRows=selected.map((aff,ai)=>{
-    const pdData=Object.entries(aData[aff]);
-    if(!pdData.length)return `<tr><td>${aff}</td><td colspan="5">No data</td></tr>`;
-    const totOT=round2(pdData.reduce((s,[,d])=>s+d.ot,0));
-    const totTotal=round2(pdData.reduce((s,[,d])=>s+d.total,0));
-    const avgOTPct=pdData.length>0?round2(pdData.reduce((s,[,d])=>s+d.otPct,0)/pdData.length):0;
-    const highEntry=pdData.reduce((max,[p,d])=>d.ot>max.ot?{p,ot:d.ot,total:d.total,pct:d.otPct}:max,{p:'—',ot:0,total:0,pct:0});
-    // OT% rate within the highest cut-off period = highOT / totalHrsInThatPeriod × 100
-    const highPct=highEntry.ot>0?fmtNum(highEntry.pct)+'%':'—';
-    const color=BAR_COLORS[ai%BAR_COLORS.length];
-    return `<tr>
-      <td style="border-left:3px solid ${color}">${aff}</td>
-      <td class="cmp-highlight">${fmtNum(totOT)} hrs</td>
-      <td class="cmp-highlight">${highEntry.p}</td>
-      <td>${fmtNum(highEntry.ot)} hrs</td>
-      <td>${fmtNum(avgOTPct)}%</td>
-      <td>${highPct}</td>
-    </tr>`;
+  const legendHtml=selected.map((a,i)=>`<div class="cmp-legend-item"><div class="cmp-legend-sq" style="background:${CLRS[i%CLRS.length]}"></div>${a}</div>`).join('');
+
+  // ── Affiliate cards ─────────────────────────────────────────────────
+  const cardsHtml=selected.map((aff,ai)=>{
+    const color=CLRS[ai%CLRS.length];
+    const pd=Object.entries(aData[aff]);
+    if(!pd.length)return `<div class="cmp-affiliate-card"><div class="cmp-card-head"><div class="cmp-card-dot" style="background:${color}"></div><div class="cmp-card-aff">${aff}</div></div><div style="color:var(--text3);font-size:12px">No data</div></div>`;
+    const totOT=round2(pd.reduce((s,[,d])=>s+d.ot,0));
+    const avgPct=round2(pd.reduce((s,[,d])=>s+d.otPct,0)/pd.length);
+    const hi=pd.reduce((max,[p,d])=>d.ot>max.ot?{p,ot:d.ot,pct:d.otPct}:max,{p:'—',ot:0,pct:0});
+    const barVals=activePeriods.map(p=>aData[aff][p]?.ot||0);
+    const maxBar=Math.max(...barVals,1);
+    const peakIdx=barVals.indexOf(Math.max(...barVals));
+    const miniBars=barVals.map((v,i)=>`<div class="cmp-mini-bar" style="height:${Math.max((v/maxBar)*100,v>0?6:0)}%;background:${i===peakIdx?'#f59e0b':color};opacity:${v>0?0.85:0.15}"></div>`).join('');
+    return `<div class="cmp-affiliate-card">
+      <div class="cmp-card-head"><div class="cmp-card-dot" style="background:${color}"></div><div class="cmp-card-aff">${aff}</div></div>
+      <div class="cmp-card-stats">
+        <div><div class="cmp-stat-lbl">TOTAL OT</div><div class="cmp-stat-val">${fmtNum(totOT)}</div></div>
+        <div><div class="cmp-stat-lbl">AVG RATE</div><div class="cmp-stat-val">${fmtNum(avgPct)}%</div></div>
+        <div><div class="cmp-stat-lbl">PEAK</div><div class="cmp-stat-val" style="font-size:12px">${shortL(hi.p)}</div></div>
+        <div><div class="cmp-stat-lbl">PEAK %</div><div class="cmp-stat-val">${fmtNum(hi.pct)}%</div></div>
+      </div>
+      <div class="cmp-mini-bars">${miniBars}</div>
+    </div>`;
   }).join('');
 
-  document.getElementById('cmp-chart').innerHTML=`
-    <div class="cmp-legend">${legend}</div>
-    <div class="cmp-chart-svg-wrap">
-      <svg width="${svgW}" height="${H+PAD_T+PAD_B}" style="display:block">
-        ${yAxis}
-        <line x1="${PAD_L}" y1="${PAD_T}" x2="${PAD_L}" y2="${PAD_T+H}" stroke="#ccc" stroke-width="1"/>
-        <line x1="${PAD_L}" y1="${PAD_T+H}" x2="${svgW}" y2="${PAD_T+H}" stroke="#ccc" stroke-width="1"/>
-        ${bars}${labels}
-      </svg>
-    </div>`;
-
-  document.getElementById('cmp-metrics').innerHTML=`
-    <div class="exec-table-wrap">
-      <table class="cmp-metrics-table">
-        <thead><tr>
-          <th>Affiliate</th>
-          <th>Total OT Hours</th>
-          <th>Highest OT Cut-off</th>
-          <th>Highest Cut-off OT</th>
-          <th>Avg OT % (all periods)</th>
-          <th>OT % Rate (Highest Cut-off)</th>
-        </tr></thead>
-        <tbody>${mRows}</tbody>
-      </table>
-    </div>`;
-
+  wrap.innerHTML=`
+    <div class="cmp-kpi-strip">
+      ${kpiTile('LATEST OT %',fmtNum(latestPct)+'%',shortL(latestP))}
+      ${kpiTile('AVG OT RATE',fmtNum(avgRate)+'%',activePeriods.length+'-period avg','gold')}
+      ${kpiTile('TOTAL OT HRS',fmtNum(ytdOT),'YTD','green')}
+      ${kpiTile('PEAK PERIOD',shortL(peakP),fmtNum(peakPct)+'%','red')}
+      ${kpiTile('DEPTS',deptCount,selected[0]+' units','sky')}
+    </div>
+    <div class="cmp-line-wrap">
+      <div class="cmp-line-header">
+        <div class="cmp-line-title">OT Rate — ${selected.join(', ')}</div>
+        <div class="cmp-line-legend">${legendHtml}</div>
+      </div>
+      <div class="cmp-line-svg-wrap">
+        <svg viewBox="0 0 ${CW} ${CH}" style="width:100%;min-width:400px;display:block">
+          ${grid}
+          <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+cH}" stroke="#ccc" stroke-width="1"/>
+          <line x1="${PL}" y1="${PT+cH}" x2="${CW-PR}" y2="${PT+cH}" stroke="#ccc" stroke-width="1"/>
+          ${linesSvg}${dotsSvg}
+        </svg>
+      </div>
+    </div>
+    <div class="cmp-cards-row">${cardsHtml}</div>`;
   wrap.style.display='block';
 }
 

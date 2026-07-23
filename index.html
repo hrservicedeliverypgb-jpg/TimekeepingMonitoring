@@ -2022,7 +2022,9 @@ const OT_COL_KEYWORDS={
   reg:      ['reghrs','rghrs','reg hrs','reg hours','regular hours','basichrs','basic hrs','basic hours','ordinary hours'],
   rgot:     ['rgot','rg ot','reg ot'],
   abshours: ['abshrs','abshours','abs hrs','abs hours','absence hrs','absence hours','absent hours'],
-  ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours']
+  ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours'],
+  late:     ['late','late hrs','late hours','tardiness','tardy hrs','tardy hours','lates','late min','lateness'],
+  undertime:['undertime','ut hrs','ut hours','under time hrs','undertime hrs','undertime hours','ut']
 };
 
 function otDetectCol(header){
@@ -2130,7 +2132,10 @@ function otParseSheet(ws,sheetName){
     const overtimeHours=otCalcOT(row,colMap);
     const totalHours   =round2(regularHours+overtimeHours);
     const otPercentage =totalHours>0?round2((overtimeHours/totalHours)*100):0;
-    employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage});
+    const lateHours    =round2(parseFloat(colMap.late!=null?row[colMap.late]:0)||0);
+    const undertimeHours=round2(parseFloat(colMap.undertime!=null?row[colMap.undertime]:0)||0);
+    const tardyHours   =round2(lateHours+undertimeHours);
+    employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage,lateHours,undertimeHours,tardyHours});
   }
   return{employees,colMap,otColNames,headerRowIdx};
 }
@@ -2362,10 +2367,11 @@ function otRenderExec(){
   const affMap={};
   allEmps.forEach(e=>{
     const a=e.affiliate||'Unknown';
-    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,emps:0};
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,emps:0};
     affMap[a].reg=round2(affMap[a].reg+e.regularHours);
     affMap[a].ot=round2(affMap[a].ot+e.overtimeHours);
     affMap[a].total=round2(affMap[a].total+e.totalHours);
+    affMap[a].tardy=round2(affMap[a].tardy+(e.tardyHours||0));
     affMap[a].emps++;
   });
   const affs=Object.keys(affMap).sort();
@@ -2373,6 +2379,8 @@ function otRenderExec(){
   const totOT=round2(affs.reduce((s,a)=>s+affMap[a].ot,0));
   const totTotal=round2(totReg+totOT);
   const totOTPct=totTotal>0?round2((totOT/totTotal)*100):0;
+  const totTardy=round2(affs.reduce((s,a)=>s+affMap[a].tardy,0));
+  const hasTardy=totTardy>0;
 
   const thRow=`<tr><th></th>${affs.map(a=>`<th>${a}</th>`).join('')}<th class="exec-total-th">TOTAL</th></tr>`;
 
@@ -2384,6 +2392,8 @@ function otRenderExec(){
 
   const otPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return t>0?fmtNum(round2((affMap[a].ot/t)*100))+'%':'0.00%';});
   const regHrs=affs.map(a=>fmtNum(affMap[a].reg));
+  const tthPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return hasTardy?(t>0?fmtNum(round2((affMap[a].tardy/t)*100))+'%':'0.00%'):'—';});
+  const tthTot=hasTardy?(totTotal>0?fmtNum(round2((totTardy/totTotal)*100))+'%':'0.00%'):'—';
 
   const payrollRows=['Late Filing','Wrong Filing','Late Approval','Early Cut-off','System Error','New Hire/Transfer','Excluded','Shift Code Concerns','Timekeeper Error']
     .map(label=>mkRow(label,affs.map(()=>'0'),'<span class="exec-red">0</span>',false)).join('');
@@ -2394,7 +2404,7 @@ function otRenderExec(){
       <div class="exec-table-wrap"><table class="exec-table">
         <thead>${thRow}</thead>
         <tbody>
-          ${mkRow('TTH — Total Tardy/UT Hours',affs.map(()=>'—'),'—',false)}
+          ${mkRow('TTH — Total Tardy/UT Hours',tthPcts,tthTot,hasTardy)}
           ${mkRow('TAH — Total Absent Hours',affs.map(()=>'—'),'—',false)}
           ${mkRow('TOH — Total OT Hours',otPcts,fmtNum(totOTPct)+'%',true)}
           ${mkRow('TRH — Total Regular Hours',regHrs,fmtNum(totReg),true)}

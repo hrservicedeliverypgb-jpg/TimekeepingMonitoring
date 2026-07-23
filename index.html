@@ -2494,7 +2494,13 @@ function otRenderComparison(){
   if(!selected.length){wrap.style.display='none';return;}
 
   const allImports=otLoad();
-  const periods=[...new Set(allImports.map(i=>i.periodLabel))].sort();
+  const periodStartMap={};
+  allImports.forEach(i=>{if(i.periodStart&&!periodStartMap[i.periodLabel])periodStartMap[i.periodLabel]=i.periodStart;});
+  const periods=[...new Set(allImports.map(i=>i.periodLabel))].sort((a,b)=>{
+    const da=periodStartMap[a]?new Date(periodStartMap[a]):new Date(0);
+    const db=periodStartMap[b]?new Date(periodStartMap[b]):new Date(0);
+    return da-db;
+  });
   const shortL=p=>p.length>12?p.slice(0,11)+'…':p;
 
   // Build per-affiliate per-period aggregates

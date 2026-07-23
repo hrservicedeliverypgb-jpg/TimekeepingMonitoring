@@ -466,7 +466,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div class="fg form-grid-wide"><label>Employee Name</label><input id="f-name" placeholder="e.g. ENRIQUEZ, ROSALLER T." autocomplete="off"/></div>
           <div class="fg"><label>Date of Inclusion</label><input id="f-date" type="date"/></div>
           <div class="fg"><label>Affiliate</label>
-            <select id="f-aff"><option value="">— Select —</option><option>PPC</option><option>PPC RNF</option><option>PSC</option><option>PHI</option><option>MAAYO</option><option>THAM</option><option>SAN LUCAS</option><option>AC</option><option>MC123</option><option>CSI</option><option>RDC</option><option>PSI</option><option>ABC</option><option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option><option>PTMSI</option><option>AMICI</option></select>
+            <select id="f-aff"><option value="">— Select —</option><option>PPC</option><option>PPC RNF</option><option>PSC</option><option>PHI</option><option>MAAYO</option><option>THAM</option><option>SAN LUCAS</option><option>AC</option><option>MC123</option><option>CSI</option><option>RDC</option><option>PSI</option><option>ABC</option><option>ABC-RANKS</option><option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option><option>PTMSI</option><option>AMICI</option></select>
           </div>
           <div class="fg"><label>Regular Hours</label><input id="f-rh" type="number" step="0.25" min="0" placeholder="0" oninput="computeTotal()"/></div>
           <div class="fg"><label>Reg OT</label><input id="f-ro" type="number" step="0.25" min="0" placeholder="0" oninput="computeTotal()"/></div>
@@ -584,7 +584,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div class="fg"><label>Date From</label><input id="rpt-from" type="date"/></div>
           <div class="fg"><label>Date To</label><input id="rpt-to" type="date"/></div>
           <div class="fg"><label>Affiliate</label>
-            <select id="rpt-aff"><option value="">All Affiliates</option><option>PPC</option><option>PPC RNF</option><option>PSC</option><option>PHI</option><option>MAAYO</option><option>THAM</option><option>SAN LUCAS</option><option>AC</option><option>MC123</option><option>CSI</option><option>RDC</option><option>PSI</option><option>ABC</option><option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option><option>PTMSI</option><option>AMICI</option></select>
+            <select id="rpt-aff"><option value="">All Affiliates</option><option>PPC</option><option>PPC RNF</option><option>PSC</option><option>PHI</option><option>MAAYO</option><option>THAM</option><option>SAN LUCAS</option><option>AC</option><option>MC123</option><option>CSI</option><option>RDC</option><option>PSI</option><option>ABC</option><option>ABC-RANKS</option><option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option><option>PTMSI</option><option>AMICI</option></select>
           </div>
           <div class="fg"><label>Employee</label><input id="rpt-search" placeholder="Search name…"/></div>
           <div class="fg"><label>Remarks</label>
@@ -905,7 +905,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <option>PPC</option><option>PPC RNF</option><option>PSC</option><option>PHI</option><option>MAAYO</option>
           <option>THAM</option><option>SAN LUCAS</option><option>AC</option><option>MC123</option>
           <option>CSI</option><option>RDC</option><option>PSI</option><option>ABC</option>
-          <option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option>
+          <option>ABC-RANKS</option><option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option>
           <option>PTMSI</option><option>AMICI</option>
         </select>
       </div>
@@ -963,7 +963,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 <div class="toast" id="toast"></div>
 
 <script>
-const AFFILIATES=['PPC','PPC RNF','PSC','PHI','MAAYO','THAM','SAN LUCAS','AC','MC123','CSI','RDC','PSI','ABC','CSPIC','SKILLS','PSEFI','TRIDENT','PTMSI','AMICI'];
+const AFFILIATES=['PPC','PPC RNF','PSC','PHI','MAAYO','THAM','SAN LUCAS','AC','MC123','CSI','RDC','PSI','ABC','ABC-RANKS','CSPIC','SKILLS','PSEFI','TRIDENT','PTMSI','AMICI'];
 const BAR_COLORS=['#1a56a8','#2ea8c4','#059669','#f59e0b','#d0435a','#8b5cf6','#c4742a','#1aa878','#e05252','#5b8dd9','#53b8a4','#d4823f','#9e6cd6','#3aa85f','#c25c8e','#4a9fe0','#e0a030','#6366f1'];
 
 const CREDS={username:'admin',password:'primary.com'};

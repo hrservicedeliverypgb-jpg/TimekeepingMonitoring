@@ -2543,8 +2543,9 @@ function otRenderComparison(){
     const totOT=round2(pdData.reduce((s,[,d])=>s+d.ot,0));
     const totTotal=round2(pdData.reduce((s,[,d])=>s+d.total,0));
     const avgOTPct=pdData.length>0?round2(pdData.reduce((s,[,d])=>s+d.otPct,0)/pdData.length):0;
-    const highEntry=pdData.reduce((max,[p,d])=>d.ot>max.ot?{p,ot:d.ot,pct:d.otPct}:max,{p:'—',ot:0,pct:0});
-    const highPct=totOT>0?fmtNum(round2((highEntry.ot/totOT)*100))+'%':'—';
+    const highEntry=pdData.reduce((max,[p,d])=>d.ot>max.ot?{p,ot:d.ot,total:d.total,pct:d.otPct}:max,{p:'—',ot:0,total:0,pct:0});
+    // OT% rate within the highest cut-off period = highOT / totalHrsInThatPeriod × 100
+    const highPct=highEntry.ot>0?fmtNum(highEntry.pct)+'%':'—';
     const color=BAR_COLORS[ai%BAR_COLORS.length];
     return `<tr>
       <td style="border-left:3px solid ${color}">${aff}</td>
@@ -2576,7 +2577,7 @@ function otRenderComparison(){
           <th>Highest OT Cut-off</th>
           <th>Highest Cut-off OT</th>
           <th>Avg OT % (all periods)</th>
-          <th>% of Highest vs Total OT</th>
+          <th>OT % Rate (Highest Cut-off)</th>
         </tr></thead>
         <tbody>${mRows}</tbody>
       </table>

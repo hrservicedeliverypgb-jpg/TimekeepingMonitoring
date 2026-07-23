@@ -273,6 +273,24 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .ot-filters label{display:block;font-size:10.5px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
 .ot-bar-section{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:18px}
 .ot-bar-section h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px}
+/* EXECUTIVE DASHBOARD TABLES */
+.exec-section{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--border);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:18px}
+.exec-section-title{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.exec-note{font-size:11px;font-weight:400;color:var(--text2);text-transform:none;letter-spacing:0;margin-left:8px}
+.exec-sub-note{font-size:11px;color:var(--text2);font-style:italic;margin-bottom:10px}
+.exec-table-wrap{overflow-x:auto;margin-top:10px}
+.exec-table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+.exec-table th{background:var(--navy);color:#fff;padding:7px 12px;text-align:center;font-size:11px;font-weight:700;white-space:nowrap;letter-spacing:.3px}
+.exec-table th:first-child{text-align:left;min-width:220px}
+.exec-table td{padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.exec-table td:first-child{font-weight:600;color:var(--text);background:var(--bg);font-size:12px}
+.exec-table td:not(:first-child){text-align:center;color:var(--text2)}
+.exec-table td.exec-total{font-weight:700;color:var(--navy);background:#f0f4ff}
+.exec-table th.exec-total-th{background:#1a3566}
+.exec-table tr:hover td{background:rgba(20,86,160,.04)}
+.exec-table tr:hover td:first-child{background:rgba(20,86,160,.07)}
+.exec-table td.exec-avail{color:var(--navy);font-weight:600}
+.exec-table td.exec-red{color:var(--red);font-weight:700}
 /* FORMATTED OT REPORT (cut-off / department / cost center / employee layout) */
 .otr-table{width:100%;border-collapse:collapse}
 .otr-table td{border:1px solid #a7bfae;padding:6px 12px;font-size:12px;text-align:center;color:var(--text)}
@@ -746,9 +764,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div><label>Affiliate</label><select id="ot-exec-aff" onchange="otRenderExec()"><option value="">All Affiliates</option></select></div>
           <div><label>Period</label><select id="ot-exec-period" onchange="otRenderExec()"><option value="">All Periods</option></select></div>
         </div>
-        <div class="ot-kpi-row" id="ot-exec-kpis"></div>
-        <div class="ot-bar-section"><h3>OT Hours by Affiliate</h3><div id="ot-exec-bar"></div></div>
-        <div class="ot-bar-section"><h3>OT % Rate by Affiliate</h3><div id="ot-exec-pct-bar"></div></div>
+        <div id="ot-exec-content"></div>
       </div>
 
       <!-- DEPARTMENTS SUB-PAGE -->
@@ -2335,32 +2351,75 @@ function otRenderExec(){
   const period=document.getElementById('ot-exec-period').value;
   const filtered=otGetFiltered(aff,period);
   const allEmps=otFlatEmployees(filtered,'','','');
+  const el=document.getElementById('ot-exec-content');
 
   if(!allEmps.length){
-    document.getElementById('ot-exec-kpis').innerHTML=`<div class="ot-kpi" style="grid-column:1/-1"><div class="kl">No Data</div><div class="kv">—</div><div class="ks">Upload a timesheet to get started</div></div>`;
-    document.getElementById('ot-exec-bar').innerHTML='<div class="ot-empty"><p>No data</p></div>';
-    document.getElementById('ot-exec-pct-bar').innerHTML='<div class="ot-empty"><p>No data</p></div>';
+    el.innerHTML='<div class="ot-empty"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><p>No data available. Upload timesheets to get started.</p></div>';
     return;
   }
 
-  const totalReg=round2(allEmps.reduce((s,e)=>s+e.regularHours,0));
-  const totalOT=round2(allEmps.reduce((s,e)=>s+e.overtimeHours,0));
-  const totalHrs=round2(totalReg+totalOT);
-  const otPct=totalHrs>0?round2((totalOT/totalHrs)*100):0;
-  const deptSet=new Set(allEmps.map(e=>e.department).filter(Boolean));
-  const ccSet=new Set(allEmps.map(e=>e.costCenter).filter(Boolean));
+  // Aggregate by affiliate
+  const affMap={};
+  allEmps.forEach(e=>{
+    const a=e.affiliate||'Unknown';
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,emps:0};
+    affMap[a].reg=round2(affMap[a].reg+e.regularHours);
+    affMap[a].ot=round2(affMap[a].ot+e.overtimeHours);
+    affMap[a].total=round2(affMap[a].total+e.totalHours);
+    affMap[a].emps++;
+  });
+  const affs=Object.keys(affMap).sort();
+  const totReg=round2(affs.reduce((s,a)=>s+affMap[a].reg,0));
+  const totOT=round2(affs.reduce((s,a)=>s+affMap[a].ot,0));
+  const totTotal=round2(totReg+totOT);
+  const totOTPct=totTotal>0?round2((totOT/totTotal)*100):0;
 
-  document.getElementById('ot-exec-kpis').innerHTML=`
-    <div class="ot-kpi"><div class="kl">Total Employees</div><div class="kv">${allEmps.length}</div><div class="ks">${filtered.length} import(s)</div></div>
-    <div class="ot-kpi green"><div class="kl">Regular Hours</div><div class="kv">${fmtNum(totalReg)}</div><div class="ks">hrs</div></div>
-    <div class="ot-kpi gold"><div class="kl">Overtime Hours</div><div class="kv">${fmtNum(totalOT)}</div><div class="ks">hrs</div></div>
-    <div class="ot-kpi sky"><div class="kl">Total Hours</div><div class="kv">${fmtNum(totalHrs)}</div><div class="ks">reg + OT</div></div>
-    <div class="ot-kpi red"><div class="kl">OT Rate</div><div class="kv">${fmtNum(otPct)}%</div><div class="ks">OT / Total Hrs</div></div>
-    <div class="ot-kpi"><div class="kl">Departments</div><div class="kv">${deptSet.size}</div><div class="ks">${ccSet.size} cost centers</div></div>
-  `;
-  const byAff=otAggregateBy(allEmps,'affiliate');
-  otBarChart('ot-exec-bar',byAff,'label','ot');
-  otBarChart('ot-exec-pct-bar',[...byAff].sort((a,b)=>b.otPct-a.otPct),'label','otPct');
+  const thRow=`<tr><th></th>${affs.map(a=>`<th>${a}</th>`).join('')}<th class="exec-total-th">TOTAL</th></tr>`;
+
+  const mkRow=(label,vals,totVal,avail)=>{
+    const cls=avail?'exec-avail':'';
+    const totCls=avail?'exec-total exec-avail':'exec-total';
+    return `<tr><td>${label}</td>${vals.map(v=>`<td class="${cls}">${v}</td>`).join('')}<td class="${totCls}">${totVal}</td></tr>`;
+  };
+
+  const otPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return t>0?fmtNum(round2((affMap[a].ot/t)*100))+'%':'0.00%';});
+  const regHrs=affs.map(a=>fmtNum(affMap[a].reg));
+
+  const payrollRows=['Late Filing','Wrong Filing','Late Approval','Early Cut-off','System Error','New Hire/Transfer','Excluded','Shift Code Concerns','Timekeeper Error']
+    .map(label=>mkRow(label,affs.map(()=>'0'),'<span class="exec-red">0</span>',false)).join('');
+
+  el.innerHTML=`
+    <div class="exec-section">
+      <div class="exec-section-title">A. Timekeeping <span class="exec-note">Abbreviations: TTH=Total Tardy Hours &nbsp;|&nbsp; TAH=Total Absent Hours &nbsp;|&nbsp; TOH=Total OT Hours &nbsp;|&nbsp; TRH=Total Regular Hours</span></div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('TTH — Total Tardy/UT Hours',affs.map(()=>'—'),'—',false)}
+          ${mkRow('TAH — Total Absent Hours',affs.map(()=>'—'),'—',false)}
+          ${mkRow('TOH — Total OT Hours',otPcts,fmtNum(totOTPct)+'%',true)}
+          ${mkRow('TRH — Total Regular Hours',regHrs,fmtNum(totReg),true)}
+          ${mkRow('% of Lost Hrs vs Reg. Working Hours',affs.map(()=>'—'),'—',false)}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="exec-section">
+      <div class="exec-section-title">B. Payroll Inclusion</div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>${payrollRows}</tbody>
+      </table></div>
+    </div>
+    <div class="exec-section">
+      <div class="exec-section-title">C. Tardiness <span class="exec-note">No. of pax per affiliate that incurred lates for the whole month</span></div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('No. of Employees Who Are Late',affs.map(()=>'—'),'—',false)}
+          ${mkRow('% vs Head Count',affs.map(()=>'—'),'—',false)}
+          ${mkRow('Submitted DA',affs.map(()=>'—'),'—',false)}
+        </tbody>
+      </table></div>
+    </div>`;
 }
 
 // ── Departments ───────────────────────────────────────────────────────

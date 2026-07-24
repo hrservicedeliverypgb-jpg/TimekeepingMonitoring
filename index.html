@@ -512,7 +512,11 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
       <div class="ot-filters">
         <div><label>Affiliate</label><select id="ot-exec-aff" onchange="otRenderExec()"><option value="">All Affiliates</option></select></div>
         <div><label>Period</label><select id="ot-exec-period" onchange="otRenderExec()"><option value="">All Periods</option></select></div>
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button class="btn btn-primary" style="height:36px;font-size:12px" onclick="execReload()">&#8635; Reload Data</button>
+        </div>
       </div>
+      <div id="exec-data-status" style="font-size:11.5px;color:var(--text2);margin:6px 0 2px;padding:6px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border);display:none"></div>
       <div id="ot-exec-content"></div>
       <!-- OT COMPARISON -->
       <div class="exec-section" style="margin-top:20px">
@@ -1132,6 +1136,11 @@ function goExecDash(){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.getElementById('page-exec').classList.add('active');
   document.getElementById('nav-exec').classList.add('active');
+  execLoadAndRender();
+}
+function execLoadAndRender(){
+  const statusEl=document.getElementById('exec-data-status');
+  if(statusEl){statusEl.style.display='none';}
   Promise.all([otCloudPull(),otpCloudPull()]).then(()=>{
     const affEl=document.getElementById('ot-exec-aff');
     if(affEl){
@@ -1141,8 +1150,23 @@ function goExecDash(){
       if(cur)affEl.value=cur;
     }
     otPopulatePeriodDropdowns();
+    // Show data status: list what's loaded per affiliate
+    if(statusEl){
+      const imports=otLoad();
+      if(imports.length){
+        const byAff={};
+        imports.forEach(i=>{if(!byAff[i.affiliate])byAff[i.affiliate]=[];byAff[i.affiliate].push(i.periodLabel);});
+        const summary=Object.keys(byAff).sort().map(a=>`<b>${a}</b>: ${byAff[a].join(', ')}`).join(' &nbsp;|&nbsp; ');
+        statusEl.innerHTML='Loaded imports &mdash; '+summary;
+        statusEl.style.display='block';
+      }
+    }
     otRenderExec();
   });
+}
+function execReload(){
+  toast('Reloading data from cloud…');
+  execLoadAndRender();
 }
 
 // ── PORTAL CLOCK ──────────────────────────────────────────────────────

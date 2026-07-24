@@ -291,6 +291,23 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .exec-table tr:hover td:first-child{background:rgba(20,86,160,.07)}
 .exec-table td.exec-avail{color:var(--navy);font-weight:600}
 .exec-table td.exec-red{color:var(--red);font-weight:700}
+/* TK MONITORING */
+.tk-excl-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
+.tk-form-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px}
+.tk-form-input{width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white);color:var(--text);font-family:inherit}
+.tk-form-input:focus{outline:none;border-color:var(--blue2)}
+.tk-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.tk-kpi-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow)}
+.tk-kpi-tile.navy{border-top:3px solid var(--navy)}
+.tk-kpi-tile.green{border-top:3px solid var(--green)}
+.tk-kpi-tile.red{border-top:3px solid var(--red)}
+.tk-kpi-tile.gold{border-top:3px solid var(--gold)}
+.tk-kpi-tile.sky{border-top:3px solid var(--sky)}
+.tk-kpi-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.tk-kpi-val{font-size:22px;font-weight:800;color:var(--navy);line-height:1}
+.tk-kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.tk-excl-del{background:none;border:none;cursor:pointer;color:var(--red);padding:2px 6px;font-size:12px;border-radius:4px}
+.tk-excl-del:hover{background:#fee2e2}
 /* OT COMPARISON */
 .cmp-aff-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
 .cmp-aff-cb-label{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:background .15s,border-color .15s}
@@ -690,6 +707,9 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         <button class="ot-sub-btn" onclick="otShowSub('rpt')" id="otsub-rpt">
           <svg viewBox="0 0 24 24"><path d="M16 6l2.3 2.3-4.9 4.9-3-3L4 16.6l1.4 1.4 6-6.1 3 3L18.7 9l2.3 2.3V6z"/></svg> Reports
         </button>
+        <button class="ot-sub-btn" onclick="otShowSub('tkmon')" id="otsub-tkmon">
+          <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg> TK Monitoring
+        </button>
       </div>
 
       <!-- UPLOAD SUB-PAGE -->
@@ -894,6 +914,69 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           </div>
           <div class="table-wrap" style="max-height:none">
             <table class="otr-table"><tbody id="ot-rpt-tbody"><tr class="empty-row"><td colspan="4">Use the filters above to view data.</td></tr></tbody></table>
+          </div>
+        </div>
+      <!-- TIMEKEEPING MONITORING SUB-PAGE -->
+      <div id="ot-sub-tkmon" style="display:none">
+        <div class="ot-filters" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+          <div><label>Covering Period</label><select id="tk-period" onchange="otRenderTkmon()"><option value="">All Periods</option></select></div>
+          <div><label>Affiliate</label><select id="tk-aff" onchange="otRenderTkmon()"><option value="">All Affiliates</option></select></div>
+        </div>
+        <!-- Summary table -->
+        <div id="tk-summary-wrap"></div>
+
+        <!-- Add Exclusion form -->
+        <div class="exec-section" style="margin-top:20px">
+          <div class="exec-section-title">Add Exclusion Record</div>
+          <div class="tk-excl-form">
+            <div>
+              <label class="tk-form-lbl">Affiliate</label>
+              <select id="tk-excl-aff" class="tk-form-input"><option value="">Select</option></select>
+            </div>
+            <div>
+              <label class="tk-form-lbl">Period</label>
+              <select id="tk-excl-period" class="tk-form-input"><option value="">Select</option></select>
+            </div>
+            <div>
+              <label class="tk-form-lbl">Employee Name</label>
+              <input id="tk-excl-name" class="tk-form-input" type="text" placeholder="Last, First M.I.">
+            </div>
+            <div>
+              <label class="tk-form-lbl">Reason</label>
+              <select id="tk-excl-reason" class="tk-form-input">
+                <option value="Late Filing">Late Filing</option>
+                <option value="Wrong Filing">Wrong Filing</option>
+                <option value="Late Approval">Late Approval</option>
+                <option value="Early Cut-off">Early Cut-off</option>
+                <option value="System Error">System Error</option>
+                <option value="New Hire/Transfer">New Hire/Transfer</option>
+                <option value="Timekeeper Error">Timekeeper Error</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="tkAddExclusion()">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Add Exclusion
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Exclusion log -->
+        <div class="exec-section" style="margin-top:12px">
+          <div class="exec-section-title">Exclusion Log</div>
+          <div class="exec-table-wrap">
+            <table class="exec-table" id="tk-excl-table">
+              <thead><tr>
+                <th style="text-align:left">Employee</th>
+                <th>Affiliate</th>
+                <th>Period</th>
+                <th>Reason</th>
+                <th>Added</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="tk-excl-tbody"><tr class="empty-row"><td colspan="6">No exclusions recorded.</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1880,7 +1963,7 @@ async function otCloudPull(){
 }
 
 // ── Sub-nav ───────────────────────────────────────────────────────────
-const OT_SUBS=['upload','periods','exec','dept','cc','emp','hist','rpt'];
+const OT_SUBS=['upload','periods','exec','dept','cc','emp','hist','rpt','tkmon'];
 
 function otShowSub(name){
   OT_SUBS.forEach(s=>{
@@ -1895,12 +1978,13 @@ function otShowSub(name){
   if(name==='emp')otRenderEmp();
   if(name==='hist')otRenderHist();
   if(name==='rpt')otRenderRpt();
+  if(name==='tkmon')otRenderTkmon();
 }
 
 function otInitPage(){
   // Pull latest data from Firebase first, then render
   Promise.all([otCloudPull(),otpCloudPull()]).then(()=>{
-    const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff'];
+    const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff','tk-excl-aff'];
     affSelectors.forEach(id=>{
       const el=document.getElementById(id);
       if(!el)return;
@@ -2511,6 +2595,178 @@ function otRenderExec(){
     else if(idx===1&&sortedPeriods.length){el.value=sortedPeriods[sortedPeriods.length-1];}
     else if(idx===0&&sortedPeriods.length){el.value=sortedPeriods[0];}
   });
+}
+
+// ── Timekeeping Monitoring ─────────────────────────────────────────────
+const TK_EXCL_KEY='tk_exclusions';
+function tkLoad(){return JSON.parse(localStorage.getItem(TK_EXCL_KEY)||'[]');}
+function tkSave(arr){localStorage.setItem(TK_EXCL_KEY,JSON.stringify(arr));}
+
+function tkPeriodDays(start,end){
+  if(!start||!end)return '—';
+  const ms=new Date(end)-new Date(start);
+  return ms>=0?Math.round(ms/(1000*60*60*24))+1:'—';
+}
+
+function tkAddExclusion(){
+  const aff=(document.getElementById('tk-excl-aff').value||'').trim();
+  const period=(document.getElementById('tk-excl-period').value||'').trim();
+  const name=(document.getElementById('tk-excl-name').value||'').trim();
+  const reason=document.getElementById('tk-excl-reason').value||'Other';
+  if(!aff){toast('Please select an Affiliate.','error');return;}
+  if(!period){toast('Please select a Period.','error');return;}
+  if(!name){toast('Please enter the Employee Name.','error');return;}
+  const excls=tkLoad();
+  excls.push({id:Date.now(),affiliate:aff,periodLabel:period,employeeName:name,reason,addedAt:new Date().toISOString().slice(0,10)});
+  tkSave(excls);
+  document.getElementById('tk-excl-name').value='';
+  otRenderTkmon();
+  toast('Exclusion record added.','success');
+}
+
+function tkDeleteExclusion(id){
+  tkSave(tkLoad().filter(e=>e.id!==id));
+  otRenderTkmon();
+}
+
+function otRenderTkmon(){
+  const allImports=otLoad();
+  const excls=tkLoad();
+  const selPeriod=document.getElementById('tk-period')?.value||'';
+  const selAff=document.getElementById('tk-aff')?.value||'';
+
+  // Populate period dropdown from covering periods + import data
+  const psmAll={};
+  allImports.forEach(i=>{if(i.periodStart&&!psmAll[i.periodLabel])psmAll[i.periodLabel]=i.periodStart;});
+  const allPeriods=[...new Set(allImports.map(i=>i.periodLabel).filter(Boolean))].sort((a,b)=>{
+    const da=psmAll[a]?new Date(psmAll[a]):new Date(0);
+    const db=psmAll[b]?new Date(psmAll[b]):new Date(0);
+    return db-da;
+  });
+  const tkPeriodSel=document.getElementById('tk-period');
+  const tkExclPeriodSel=document.getElementById('tk-excl-period');
+  if(tkPeriodSel){
+    const cur=tkPeriodSel.value;
+    while(tkPeriodSel.options.length>1)tkPeriodSel.remove(1);
+    allPeriods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;tkPeriodSel.appendChild(o);});
+    if(cur&&allPeriods.includes(cur))tkPeriodSel.value=cur;
+  }
+  if(tkExclPeriodSel){
+    const cur2=tkExclPeriodSel.value;
+    while(tkExclPeriodSel.options.length>1)tkExclPeriodSel.remove(1);
+    allPeriods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;tkExclPeriodSel.appendChild(o);});
+    if(cur2&&allPeriods.includes(cur2))tkExclPeriodSel.value=cur2;
+  }
+
+  // Filter imports by selected filters
+  let filteredImports=allImports;
+  if(selPeriod)filteredImports=filteredImports.filter(i=>i.periodLabel===selPeriod);
+  if(selAff)filteredImports=filteredImports.filter(i=>i.affiliate===selAff);
+
+  const wrap=document.getElementById('tk-summary-wrap');
+  if(!wrap)return;
+
+  if(!filteredImports.length){
+    wrap.innerHTML='<div class="ot-empty"><p>No timesheet data found for the selected filters. Upload timesheets first.</p></div>';
+    tkRenderExclLog(excls,selPeriod,selAff);
+    return;
+  }
+
+  // Build per-affiliate data
+  const affMap={};
+  filteredImports.forEach(imp=>{
+    const a=imp.affiliate;
+    if(!affMap[a])affMap[a]={included:0,daysVals:[],periodStart:imp.periodStart,periodEnd:imp.periodEnd};
+    affMap[a].included+=imp.employees.length;
+    if(imp.periodStart&&imp.periodEnd){
+      const d=tkPeriodDays(imp.periodStart,imp.periodEnd);
+      if(d!=='—')affMap[a].daysVals.push(+d);
+    }
+  });
+
+  const affs=Object.keys(affMap).sort();
+  const filteredExcls=excls.filter(e=>{
+    if(selPeriod&&e.periodLabel!==selPeriod)return false;
+    if(selAff&&e.affiliate!==selAff)return false;
+    return true;
+  });
+
+  // Per-affiliate exclusion count
+  const exclMap={};
+  filteredExcls.forEach(e=>{exclMap[e.affiliate]=(exclMap[e.affiliate]||0)+1;});
+
+  const totIncluded=affs.reduce((s,a)=>s+affMap[a].included,0);
+  const totExcl=affs.reduce((s,a)=>s+(exclMap[a]||0),0);
+  const totTotal=totIncluded+totExcl;
+  const inclRate=totTotal>0?round2((totIncluded/totTotal)*100):100;
+
+  // Determine representative period info for days
+  const firstImp=filteredImports.find(i=>i.periodStart&&i.periodEnd);
+  const periodDaysDisplay=firstImp?tkPeriodDays(firstImp.periodStart,firstImp.periodEnd):'—';
+
+  // KPI tiles
+  const kpiHtml=`
+    <div class="tk-kpi-row">
+      <div class="tk-kpi-tile navy"><div class="tk-kpi-lbl">Days in Period</div><div class="tk-kpi-val">${periodDaysDisplay}</div><div class="tk-kpi-sub">${selPeriod||'Selected period'}</div></div>
+      <div class="tk-kpi-tile green"><div class="tk-kpi-lbl">Included</div><div class="tk-kpi-val">${totIncluded}</div><div class="tk-kpi-sub">Employees uploaded</div></div>
+      <div class="tk-kpi-tile red"><div class="tk-kpi-lbl">Excluded</div><div class="tk-kpi-val">${totExcl}</div><div class="tk-kpi-sub">Manually recorded</div></div>
+      <div class="tk-kpi-tile gold"><div class="tk-kpi-lbl">Total</div><div class="tk-kpi-val">${totTotal}</div><div class="tk-kpi-sub">Incl. + Excl.</div></div>
+      <div class="tk-kpi-tile sky"><div class="tk-kpi-lbl">% Inclusion</div><div class="tk-kpi-val">${fmtNum(inclRate)}%</div><div class="tk-kpi-sub">vs Total</div></div>
+    </div>`;
+
+  // Summary table
+  const thRow=`<tr><th></th>${affs.map(a=>`<th>${a}</th>`).join('')}<th class="exec-total-th">TOTAL</th></tr>`;
+  const mkRow=(lbl,vals,tot,cls='')=>`<tr><td>${lbl}</td>${vals.map(v=>`<td class="${cls}">${v}</td>`).join('')}<td class="exec-total ${cls}">${tot}</td></tr>`;
+
+  const daysRow=affs.map(a=>{
+    const days=a&&affMap[a].daysVals.length?Math.max(...affMap[a].daysVals):'—';
+    return days;
+  });
+  const inclRow=affs.map(a=>affMap[a].included);
+  const exclRow=affs.map(a=>exclMap[a]||0);
+  const totalRow=affs.map(a=>affMap[a].included+(exclMap[a]||0));
+  const rateRow=affs.map(a=>{
+    const t=affMap[a].included+(exclMap[a]||0);
+    return t>0?fmtNum(round2((affMap[a].included/t)*100))+'%':'100.00%';
+  });
+
+  const tableHtml=`
+    <div class="exec-section">
+      <div class="exec-section-title">E. Timekeeping Monitoring Summary
+        <span class="exec-note">${selPeriod?'Period: '+selPeriod:'All periods'} ${selAff?'| Affiliate: '+selAff:''}</span>
+      </div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('Days in TK Period',daysRow,'—')}
+          ${mkRow('Included (Uploaded)',inclRow,totIncluded,'exec-avail')}
+          ${mkRow('Excluded (Manual)',exclRow.map(v=>v>0?`<span style="color:var(--red);font-weight:700">${v}</span>`:v),totExcl>0?`<span style="color:var(--red);font-weight:700">${totExcl}</span>`:0)}
+          ${mkRow('Total (Incl. + Excl.)',totalRow,totTotal)}
+          ${mkRow('% Inclusion Rate',rateRow,totTotal>0?fmtNum(round2((totIncluded/totTotal)*100))+'%':'100.00%','exec-avail')}
+        </tbody>
+      </table></div>
+    </div>`;
+
+  wrap.innerHTML=kpiHtml+tableHtml;
+  tkRenderExclLog(excls,selPeriod,selAff);
+}
+
+function tkRenderExclLog(excls,selPeriod,selAff){
+  const tbody=document.getElementById('tk-excl-tbody');
+  if(!tbody)return;
+  let list=excls;
+  if(selPeriod)list=list.filter(e=>e.periodLabel===selPeriod);
+  if(selAff)list=list.filter(e=>e.affiliate===selAff);
+  if(!list.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No exclusions recorded.</td></tr>';return;}
+  tbody.innerHTML=list.map(e=>`
+    <tr>
+      <td style="font-weight:600">${e.employeeName}</td>
+      <td style="text-align:center">${e.affiliate}</td>
+      <td style="text-align:center;font-size:11px">${e.periodLabel}</td>
+      <td style="text-align:center"><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${e.reason}</span></td>
+      <td style="text-align:center;color:var(--text3);font-size:11px">${e.addedAt||'—'}</td>
+      <td style="text-align:center"><button class="tk-excl-del" onclick="tkDeleteExclusion(${e.id})" title="Remove">✕</button></td>
+    </tr>`).join('');
 }
 
 // ── OT Comparison ─────────────────────────────────────────────────────

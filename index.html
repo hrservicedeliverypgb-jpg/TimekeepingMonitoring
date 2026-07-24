@@ -1992,7 +1992,11 @@ async function otCloudPull(){
     if(!res.ok)return;
     const data=await res.json();
     if(Array.isArray(data)&&data.length){
-      localStorage.setItem('ot_imports',JSON.stringify(data));
+      // Merge: preserve local-only records not yet synced to Firebase (avoids race with otCloudSave)
+      const local=otLoad();
+      const fbKeys=new Set(data.map(i=>i.affiliate+'|'+i.periodLabel));
+      const localOnly=local.filter(i=>!fbKeys.has(i.affiliate+'|'+i.periodLabel));
+      localStorage.setItem('ot_imports',JSON.stringify([...data,...localOnly]));
     }
   }catch(e){console.warn('OT cloud pull failed',e);}
 }

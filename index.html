@@ -2584,12 +2584,13 @@ async function otRenderExec(){
     return `<tr><td>${label}</td>${vals.map(v=>`<td class="${cls}">${v}</td>`).join('')}<td class="${totCls}">${totVal}</td></tr>`;
   };
 
-  const otPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return t>0?fmtNum(round2((affMap[a].ot/t)*100))+'%':'0.00%';});
+  const otPcts=affs.map(a=>{return affMap[a].reg>0?fmtNum(round2((affMap[a].ot/affMap[a].reg)*100))+'%':'0.00%';});
+  const totOTPct2=totReg>0?round2((totOT/totReg)*100):0;
   const regHrs=affs.map(a=>fmtNum(affMap[a].reg));
-  const tthPcts=affs.map(a=>{if(!affMap[a].tardy)return '—';const t=round2(affMap[a].reg+affMap[a].ot);return t>0?fmtNum(round2((affMap[a].tardy/t)*100))+'%':'0.00%';});
-  const tthTot=hasTardy?(totTotal>0?fmtNum(round2((totTardy/totTotal)*100))+'%':'0.00%'):'—';
-  const tahPcts=affs.map(a=>{if(!affMap[a].abs)return '—';const t=round2(affMap[a].reg+affMap[a].ot);return t>0?fmtNum(round2((affMap[a].abs/t)*100))+'%':'0.00%';});
-  const tahTot=hasAbs?(totTotal>0?fmtNum(round2((totAbs/totTotal)*100))+'%':'0.00%'):'—';
+  const tthPcts=affs.map(a=>{if(!affMap[a].tardy)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].tardy/affMap[a].reg)*100))+'%':'0.00%';});
+  const tthTot=hasTardy?(totReg>0?fmtNum(round2((totTardy/totReg)*100))+'%':'0.00%'):'—';
+  const tahPcts=affs.map(a=>{if(!affMap[a].abs)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].abs/affMap[a].reg)*100))+'%':'0.00%';});
+  const tahTot=hasAbs?(totReg>0?fmtNum(round2((totAbs/totReg)*100))+'%':'0.00%'):'—';
   const lostPcts=affs.map(a=>{const lost=round2(affMap[a].tardy+affMap[a].abs);if(!lost)return '—';return affMap[a].reg>0?fmtNum(round2((lost/affMap[a].reg)*100))+'%':'0.00%';});
   const lostTot=(hasTardy||hasAbs)?(totReg>0?fmtNum(round2((round2(totTardy+totAbs)/totReg)*100))+'%':'0.00%'):'—';
 
@@ -2636,7 +2637,7 @@ async function otRenderExec(){
         <tbody>
           ${mkRow('TTH — Total Tardy/UT Hours',tthPcts,tthTot,hasTardy)}
           ${mkRow('TAH — Total Absent Hours',tahPcts,tahTot,hasAbs)}
-          ${mkRow('TOH — Total OT Hours',otPcts,fmtNum(totOTPct)+'%',true)}
+          ${mkRow('TOH — Total OT Hours',otPcts,fmtNum(totOTPct2)+'%',true)}
           ${mkRow('TRH — Total Regular Hours',regHrs,fmtNum(totReg),true)}
           ${mkRow('% of Lost Hrs vs Reg. Working Hours',lostPcts,lostTot,(hasTardy||hasAbs))}
         </tbody>

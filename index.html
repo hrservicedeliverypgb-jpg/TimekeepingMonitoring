@@ -2601,10 +2601,10 @@ async function otRenderExec(){
   const otPcts=affs.map(a=>{if(nd(a))return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].ot/affMap[a].reg)*100))+'%':'0.00%';});
   const totOTPct2=totReg>0?round2((totOT/totReg)*100):0;
   const regHrs=affs.map(a=>nd(a)?'—':fmtNum(affMap[a].reg));
-  const tthPcts=affs.map(a=>{if(nd(a)||!affMap[a].tardy)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].tardy/affMap[a].reg)*100))+'%':'0.00%';});
-  const tthTot=hasTardy?(totReg>0?fmtNum(round2((totTardy/totReg)*100))+'%':'0.00%'):'—';
-  const tahPcts=affs.map(a=>{if(nd(a)||!affMap[a].abs)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].abs/affMap[a].reg)*100))+'%':'0.00%';});
-  const tahTot=hasAbs?(totReg>0?fmtNum(round2((totAbs/totReg)*100))+'%':'0.00%'):'—';
+  const tthVals=affs.map(a=>{if(nd(a)||!affMap[a].tardy)return '—';return fmtNum(affMap[a].tardy);});
+  const tthTot=hasTardy?fmtNum(totTardy):'—';
+  const tahVals=affs.map(a=>{if(nd(a)||!affMap[a].abs)return '—';return fmtNum(affMap[a].abs);});
+  const tahTot=hasAbs?fmtNum(totAbs):'—';
   const lostPcts=affs.map(a=>{if(nd(a))return '—';const lost=round2(affMap[a].tardy+affMap[a].abs);if(!lost)return '—';return affMap[a].reg>0?fmtNum(round2((lost/affMap[a].reg)*100))+'%':'0.00%';});
   const lostTot=(hasTardy||hasAbs)?(totReg>0?fmtNum(round2((round2(totTardy+totAbs)/totReg)*100))+'%':'0.00%'):'—';
 
@@ -2649,8 +2649,8 @@ async function otRenderExec(){
       <div class="exec-table-wrap"><table class="exec-table">
         <thead>${thRow}</thead>
         <tbody>
-          ${mkRow('TTH — Total Tardy/UT Hours',tthPcts,tthTot,hasTardy)}
-          ${mkRow('TAH — Total Absent Hours',tahPcts,tahTot,hasAbs)}
+          ${mkRow('TTH — Total Tardy/UT Hours',tthVals,tthTot,hasTardy)}
+          ${mkRow('TAH — Total Absent Hours',tahVals,tahTot,hasAbs)}
           ${mkRow('TOH — Total OT Hours',otPcts,fmtNum(totOTPct2)+'%',true)}
           ${mkRow('TRH — Total Regular Hours',regHrs,fmtNum(totReg),true)}
           ${mkRow('% of Lost Hrs vs Reg. Working Hours',lostPcts,lostTot,(hasTardy||hasAbs))}

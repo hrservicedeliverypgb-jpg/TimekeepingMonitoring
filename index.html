@@ -635,6 +635,20 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div class="fg"><label>Affiliate</label>
             <select id="rpt-aff"><option value="">All Affiliates</option><option>PPC</option><option>PPC RNF</option><option>PSC</option><option>PHI</option><option>MAAYO</option><option>THAM</option><option>SAN LUCAS</option><option>AC</option><option>MC123</option><option>CSI</option><option>RDC</option><option>PSI</option><option>ABC</option><option>ABC-RANKS</option><option>CSPIC</option><option>SKILLS</option><option>PSEFI</option><option>TRIDENT</option><option>PTMSI</option><option>AMICI</option></select>
           </div>
+          <div class="fg"><label>Reason for Inclusion</label>
+            <select id="rpt-reason">
+              <option value="">All Reasons</option>
+              <option>New Hire/Transfer</option>
+              <option>Late Filing</option>
+              <option>Excluded last cut off</option>
+              <option>Timekeeper Error</option>
+              <option>Wrong Filing</option>
+              <option>Late Approval</option>
+              <option>Shift Code Concerns</option>
+              <option>System Error</option>
+              <option>Early Cutoff</option>
+            </select>
+          </div>
           <div class="fg"><label>Employee</label><input id="rpt-search" placeholder="Search name…"/></div>
           <div class="fg"><label>Remarks</label>
             <select id="rpt-remarks">
@@ -1570,12 +1584,14 @@ function getFiltered(){
   const from=document.getElementById('rpt-from').value;
   const to=document.getElementById('rpt-to').value;
   const aff=document.getElementById('rpt-aff').value;
+  const reason=(document.getElementById('rpt-reason')?.value||'');
   const q=(document.getElementById('rpt-search')?.value||'').toLowerCase();
   const rem=(document.getElementById('rpt-remarks')?.value||'');
   return records.filter(r=>{
     if(from&&r.date<from)return false;
     if(to&&r.date>to)return false;
     if(aff&&r.aff!==aff)return false;
+    if(reason&&r.reason!==reason)return false;
     if(q&&!r.name.toLowerCase().includes(q))return false;
     if(rem==='none'&&r.remarks)return false;
     if(rem&&rem!=='none'&&r.remarks!==rem)return false;
@@ -1645,6 +1661,7 @@ function renderReportTable(rows){
 function clearFilters(){
   ['rpt-from','rpt-to','rpt-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('rpt-aff').value='';
+  document.getElementById('rpt-reason').value='';
   document.getElementById('rpt-remarks').value='';
   document.getElementById('rpt-count').textContent='—';
   document.getElementById('rpt-stats').innerHTML='';
@@ -2495,7 +2512,12 @@ function piRefreshTotals(affs,reasons,piKey){
 }
 
 // ── Executive Dashboard ───────────────────────────────────────────────
-function otRenderExec(){
+async function otRenderExec(){
+  // Ensure Payroll Inclusion records are fresh from Firebase before rendering Section B
+  try{
+    const res=await fetch(FB_URL);
+    if(res.ok){const d=await res.json();if(d?.records&&Array.isArray(d.records))localStorage.setItem('hr_records',JSON.stringify(d.records));}
+  }catch(e){/* offline — use cached localStorage */}
   const aff=document.getElementById('ot-exec-aff').value;
   const period=document.getElementById('ot-exec-period').value;
   const filtered=otGetFiltered(aff,period);

@@ -2529,10 +2529,12 @@ async function otRenderExec(){
     return;
   }
 
-  // Aggregate by affiliate
+  // Aggregate by affiliate — exclude ABC-RANKS from exec dashboard display
+  const EXEC_EXCL_AFFS=new Set(['ABC-RANKS']);
   const affMap={};
   allEmps.forEach(e=>{
     const a=e.affiliate||'Unknown';
+    if(EXEC_EXCL_AFFS.has(a))return;
     if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,emps:0};
     affMap[a].reg=round2(affMap[a].reg+e.regularHours);
     affMap[a].ot=round2(affMap[a].ot+e.overtimeHours);

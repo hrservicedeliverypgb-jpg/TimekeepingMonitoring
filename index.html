@@ -2526,8 +2526,33 @@ function otRenderExec(){
   const tthPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return hasTardy?(t>0?fmtNum(round2((affMap[a].tardy/t)*100))+'%':'0.00%'):'—';});
   const tthTot=hasTardy?(totTotal>0?fmtNum(round2((totTardy/totTotal)*100))+'%':'0.00%'):'—';
 
-  const payrollRows=['Late Filing','Wrong Filing','Late Approval','Early Cut-off','System Error','New Hire/Transfer','Excluded','Shift Code Concerns','Timekeeper Error']
-    .map(label=>mkRow(label,affs.map(()=>'0'),'<span class="exec-red">0</span>',false)).join('');
+  // B. Payroll Inclusion — counts from TK Monitoring exclusion log
+  const PAYROLL_REASONS=['Late Filing','Wrong Filing','Late Approval','Early Cut-off','System Error','New Hire/Transfer','Excluded','Shift Code Concerns','Timekeeper Error'];
+  const allExcls=tkLoad();
+  // Filter exclusions to same period/aff scope as the exec dashboard
+  const scopedExcls=allExcls.filter(e=>{
+    if(period&&e.periodLabel!==period)return false;
+    if(aff&&e.affiliate!==aff)return false;
+    return true;
+  });
+  // Build reason × affiliate count map
+  const exclCountMap={};
+  scopedExcls.forEach(e=>{
+    const r=e.reason||'Other';
+    if(!exclCountMap[r])exclCountMap[r]={};
+    exclCountMap[r][e.affiliate]=(exclCountMap[r][e.affiliate]||0)+1;
+  });
+  const payrollRows=PAYROLL_REASONS.map(label=>{
+    const reasonMap=exclCountMap[label]||{};
+    const vals=affs.map(a=>reasonMap[a]||0);
+    const rowTot=vals.reduce((s,v)=>s+v,0);
+    const fmtVal=v=>v>0?`<span style="color:var(--red);font-weight:700">${v}</span>`:'0';
+    const fmtTot=v=>v>0?`<span class="exec-red">${v}</span>`:'<span style="color:var(--text3)">0</span>';
+    return `<tr><td>${label}</td>${vals.map(v=>`<td>${fmtVal(v)}</td>`).join('')}<td class="exec-total">${fmtTot(rowTot)}</td></tr>`;
+  }).join('');
+  const payTotPerAff=affs.map(a=>scopedExcls.filter(e=>e.affiliate===a).length);
+  const payGrandTot=payTotPerAff.reduce((s,v)=>s+v,0);
+  const payTotalRow=`<tr style="font-weight:700;background:#f0f4ff"><td>Total Exclusions</td>${payTotPerAff.map(v=>`<td class="exec-total">${v>0?`<span class="exec-red">${v}</span>`:v}</td>`).join('')}<td class="exec-total">${payGrandTot>0?`<span class="exec-red">${payGrandTot}</span>`:payGrandTot}</td></tr>`;
 
   el.innerHTML=`
     <div class="exec-section">
@@ -2544,10 +2569,10 @@ function otRenderExec(){
       </table></div>
     </div>
     <div class="exec-section">
-      <div class="exec-section-title">B. Payroll Inclusion</div>
+      <div class="exec-section-title">B. Payroll Inclusion <span class="exec-note">Counts sourced from TK Monitoring exclusion records${period?' — '+period:''}</span></div>
       <div class="exec-table-wrap"><table class="exec-table">
         <thead>${thRow}</thead>
-        <tbody>${payrollRows}</tbody>
+        <tbody>${payrollRows}${payTotalRow}</tbody>
       </table></div>
     </div>
     <div class="exec-section">

@@ -411,7 +411,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
       </div>
     </div>
     <div class="header-nav">
-      <div class="nav-item active" onclick="goExecDash()" id="nav-home">
+      <div class="nav-item active" onclick="goExecDash()" id="nav-exec">
         <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg> Executive Dashboard
       </div>
       <div class="nav-item" onclick="showPage('inclusion')" id="nav-inclusion">
@@ -504,6 +504,33 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         </div>
       </div>
 
+    </div>
+
+    <!-- EXECUTIVE DASHBOARD PAGE -->
+    <div class="page" id="page-exec">
+      <div class="page-title"><h1>Executive Dashboard</h1><p>Timekeeping summary across affiliates and periods</p></div>
+      <div class="ot-filters">
+        <div><label>Affiliate</label><select id="ot-exec-aff" onchange="otRenderExec()"><option value="">All Affiliates</option></select></div>
+        <div><label>Period</label><select id="ot-exec-period" onchange="otRenderExec()"><option value="">All Periods</option></select></div>
+      </div>
+      <div id="ot-exec-content"></div>
+      <!-- OT COMPARISON -->
+      <div class="exec-section" style="margin-top:20px">
+        <div class="exec-section-title">D. OT Comparison by Affiliate</div>
+        <div class="exec-note" style="display:block;margin:4px 0 12px">Select affiliates and period range to compare OT across cut-off periods</div>
+        <div style="display:flex;gap:16px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap">
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">From Period</label>
+            <select id="cmp-from-period" style="min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white);color:var(--text)"><option value="">-- All --</option></select></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">To Period</label>
+            <select id="cmp-to-period" style="min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white);color:var(--text)"><option value="">-- All --</option></select></div>
+        </div>
+        <div class="cmp-aff-row" id="cmp-aff-list"></div>
+        <button class="btn btn-primary" style="margin:12px 0 18px" onclick="otRenderComparison()">Compare Selected</button>
+        <div id="cmp-chart-wrap" style="display:none">
+          <div id="cmp-chart"></div>
+          <div id="cmp-metrics"></div>
+        </div>
+      </div>
     </div>
 
     <!-- INCLUSION PAGE -->
@@ -705,9 +732,6 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         <button class="ot-sub-btn" onclick="otShowSub('periods')" id="otsub-periods">
           <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 002 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg> Covering Periods
         </button>
-        <button class="ot-sub-btn" onclick="otShowSub('exec')" id="otsub-exec">
-          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Executive Dashboard
-        </button>
         <button class="ot-sub-btn" onclick="otShowSub('dept')" id="otsub-dept">
           <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg> Departments
         </button>
@@ -821,32 +845,6 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div class="table-wrap"><table><thead><tr>
             <th>#</th><th style="text-align:left">Covering Period</th><th>Start</th><th>End</th><th>Year</th><th>Del</th>
           </tr></thead><tbody id="otp-tbody"><tr class="empty-row"><td colspan="6">No covering periods yet.</td></tr></tbody></table></div>
-        </div>
-      </div>
-
-      <!-- EXECUTIVE DASHBOARD SUB-PAGE -->
-      <div id="ot-sub-exec" style="display:none">
-        <div class="ot-filters">
-          <div><label>Affiliate</label><select id="ot-exec-aff" onchange="otRenderExec()"><option value="">All Affiliates</option></select></div>
-          <div><label>Period</label><select id="ot-exec-period" onchange="otRenderExec()"><option value="">All Periods</option></select></div>
-        </div>
-        <div id="ot-exec-content"></div>
-        <!-- OT COMPARISON -->
-        <div class="exec-section" style="margin-top:20px">
-          <div class="exec-section-title">D. OT Comparison by Affiliate</div>
-          <div class="exec-note" style="display:block;margin:4px 0 12px">Select affiliates and period range to compare OT across cut-off periods</div>
-          <div style="display:flex;gap:16px;margin-bottom:12px;align-items:flex-end;flex-wrap:wrap">
-            <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">From Period</label>
-              <select id="cmp-from-period" style="min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white);color:var(--text)"><option value="">-- All --</option></select></div>
-            <div><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">To Period</label>
-              <select id="cmp-to-period" style="min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white);color:var(--text)"><option value="">-- All --</option></select></div>
-          </div>
-          <div class="cmp-aff-row" id="cmp-aff-list"></div>
-          <button class="btn btn-primary" style="margin:12px 0 18px" onclick="otRenderComparison()">Compare Selected</button>
-          <div id="cmp-chart-wrap" style="display:none">
-            <div id="cmp-chart"></div>
-            <div id="cmp-metrics"></div>
-          </div>
         </div>
       </div>
 
@@ -1132,9 +1130,19 @@ function doLogout(){
 function goExecDash(){
   document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  document.getElementById('page-overtime').classList.add('active');
-  document.getElementById('nav-home').classList.add('active');
-  otInitPage('exec');
+  document.getElementById('page-exec').classList.add('active');
+  document.getElementById('nav-exec').classList.add('active');
+  Promise.all([otCloudPull(),otpCloudPull()]).then(()=>{
+    const affEl=document.getElementById('ot-exec-aff');
+    if(affEl){
+      const cur=affEl.value;
+      while(affEl.options.length>1)affEl.remove(1);
+      AFFILIATES.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;affEl.appendChild(o);});
+      if(cur)affEl.value=cur;
+    }
+    otPopulatePeriodDropdowns();
+    otRenderExec();
+  });
 }
 
 // ── PORTAL CLOCK ──────────────────────────────────────────────────────
@@ -1990,7 +1998,7 @@ async function otCloudPull(){
 }
 
 // ── Sub-nav ───────────────────────────────────────────────────────────
-const OT_SUBS=['upload','periods','exec','dept','cc','emp','hist','rpt','tkmon'];
+const OT_SUBS=['upload','periods','dept','cc','emp','hist','rpt','tkmon'];
 
 function otShowSub(name){
   OT_SUBS.forEach(s=>{
@@ -1999,7 +2007,6 @@ function otShowSub(name){
   });
   if(name==='upload')otPopulateUploadPeriods();
   if(name==='periods')otpRender();
-  if(name==='exec')otRenderExec();
   if(name==='dept')otRenderDept();
   if(name==='cc')otRenderCC();
   if(name==='emp')otRenderEmp();
@@ -2008,10 +2015,10 @@ function otShowSub(name){
   if(name==='tkmon')otRenderTkmon();
 }
 
-function otInitPage(defaultSub){
+function otInitPage(){
   // Pull latest data from Firebase first, then render
   Promise.all([otCloudPull(),otpCloudPull()]).then(()=>{
-    const affSelectors=['ot-up-aff','ot-exec-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff','tk-excl-aff'];
+    const affSelectors=['ot-up-aff','ot-dept-aff','ot-cc-aff','ot-emp-aff','ot-hist-aff','ot-rpt-aff','tk-excl-aff'];
     affSelectors.forEach(id=>{
       const el=document.getElementById(id);
       if(!el)return;
@@ -2022,7 +2029,6 @@ function otInitPage(defaultSub){
     });
     otPopulatePeriodDropdowns();
     otPopulateUploadPeriods();
-    if(defaultSub){otShowSub(defaultSub);return;}
     const anyActive=OT_SUBS.some(s=>document.getElementById('ot-sub-'+s).style.display==='block');
     if(!anyActive)otShowSub('upload');
   });

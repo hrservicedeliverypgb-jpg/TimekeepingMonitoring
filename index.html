@@ -946,14 +946,14 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
             <div>
               <label class="tk-form-lbl">Reason</label>
               <select id="tk-excl-reason" class="tk-form-input">
+                <option value="New Hire/Transfer">New Hire/Transfer</option>
                 <option value="Late Filing">Late Filing</option>
+                <option value="Excluded last cut off">Excluded last cut off</option>
+                <option value="Timekeeper Error">Timekeeper Error</option>
                 <option value="Wrong Filing">Wrong Filing</option>
                 <option value="Late Approval">Late Approval</option>
-                <option value="Early Cut-off">Early Cut-off</option>
+                <option value="Shift Code Concerns">Shift Code Concerns</option>
                 <option value="System Error">System Error</option>
-                <option value="New Hire/Transfer">New Hire/Transfer</option>
-                <option value="Timekeeper Error">Timekeeper Error</option>
-                <option value="Other">Other</option>
               </select>
             </div>
             <div style="display:flex;align-items:flex-end">
@@ -2539,40 +2539,34 @@ function otRenderExec(){
   const tthPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return hasTardy?(t>0?fmtNum(round2((affMap[a].tardy/t)*100))+'%':'0.00%'):'—';});
   const tthTot=hasTardy?(totTotal>0?fmtNum(round2((totTardy/totTotal)*100))+'%':'0.00%'):'—';
 
-  // B. Payroll Inclusion — inline-editable counts saved per period+affiliate key
-  const PAYROLL_REASONS=['Late Filing','Wrong Filing','Late Approval','Early Cut-off','System Error','New Hire/Transfer','Excluded','Shift Code Concerns','Timekeeper Error'];
-  const piKey=`pi_${period||'ALL'}_${aff||'ALL'}`;
-  const piData=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
-  const piScope=piData[piKey]||{};
-
-  function piGet(reason,affiliate){return(piScope[reason]&&piScope[reason][affiliate])||0;}
-  function piSet(reason,affiliate,val){
-    const all=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
-    if(!all[piKey])all[piKey]={};
-    if(!all[piKey][reason])all[piKey][reason]={};
-    all[piKey][reason][affiliate]=val;
-    localStorage.setItem('payroll_inclusion',JSON.stringify(all));
-    // refresh totals row only
-    piRefreshTotals(affs,PAYROLL_REASONS,piKey);
-  }
-
-  const piCell=(reason,affiliate)=>{
-    const v=piGet(reason,affiliate);
-    const dkey=`data-pi="${piKey}" data-reason="${reason.replace(/"/g,'&quot;')}" data-aff="${affiliate}"`;
-    const style=v>0?'color:var(--red);font-weight:700':'color:var(--text3)';
-    return `<td><span class="pi-cell" ${dkey} title="Click to edit" style="cursor:pointer;${style}">${v}</span></td>`;
-  };
-
+  // B. Payroll Inclusion — auto-read from TK Monitoring exclusion records
+  const PAYROLL_REASONS=['New Hire/Transfer','Late Filing','Excluded last cut off','Timekeeper Error','Wrong Filing','Late Approval','Shift Code Concerns','System Error'];
+  const allExcls=tkLoad();
+  const scopedExcls=allExcls.filter(e=>{
+    if(period&&e.periodLabel!==period)return false;
+    if(aff&&e.affiliate!==aff)return false;
+    return true;
+  });
+  // Merge affiliates from timesheet data AND exclusion records so no affiliate is missed
+  const piAffs=[...new Set([...affs,...scopedExcls.map(e=>e.affiliate).filter(Boolean)])].sort();
+  // Build reason × affiliate count map
+  const piCountMap={};
+  scopedExcls.forEach(e=>{
+    const r=e.reason||'Other';
+    if(!piCountMap[r])piCountMap[r]={};
+    piCountMap[r][e.affiliate]=(piCountMap[r][e.affiliate]||0)+1;
+  });
+  const piThRow=`<tr><th></th>${piAffs.map(a=>`<th>${a}</th>`).join('')}<th class="exec-total-th">TOTAL</th></tr>`;
   const payrollRows=PAYROLL_REASONS.map(reason=>{
-    const cells=affs.map(a=>piCell(reason,a)).join('');
-    const rowTot=affs.reduce((s,a)=>s+piGet(reason,a),0);
-    const totStyle=rowTot>0?'class="exec-total exec-red"':'class="exec-total"';
-    return `<tr><td>${reason}</td>${cells}<td ${totStyle} id="pi-tot-${reason.replace(/\W/g,'_')}">${rowTot}</td></tr>`;
+    const rm=piCountMap[reason]||{};
+    const vals=piAffs.map(a=>rm[a]||0);
+    const rowTot=vals.reduce((s,v)=>s+v,0);
+    const fmtV=v=>v>0?`<span style="color:var(--red);font-weight:700">${v}</span>`:'<span style="color:var(--text3)">0</span>';
+    return `<tr><td>${reason}</td>${vals.map(v=>`<td style="text-align:center">${fmtV(v)}</td>`).join('')}<td class="${rowTot>0?'exec-total exec-red':'exec-total'}">${rowTot||0}</td></tr>`;
   }).join('');
-
-  const payTotPerAff=affs.map(a=>PAYROLL_REASONS.reduce((s,r)=>s+piGet(r,a),0));
+  const payTotPerAff=piAffs.map(a=>PAYROLL_REASONS.reduce((s,r)=>s+(piCountMap[r]&&piCountMap[r][a]?piCountMap[r][a]:0),0));
   const payGrandTot=payTotPerAff.reduce((s,v)=>s+v,0);
-  const payTotalRow=`<tr style="font-weight:700;background:#f0f4ff" id="pi-grand-row"><td>TOTAL</td>${payTotPerAff.map((v,i)=>`<td class="exec-total" id="pi-col-tot-${i}">${v>0?`<span class="exec-red">${v}</span>`:v}</td>`).join('')}<td class="exec-total">${payGrandTot>0?`<span class="exec-red">${payGrandTot}</span>`:payGrandTot}</td></tr>`;
+  const payTotalRow=`<tr style="font-weight:700;background:#f0f4ff"><td>TOTAL</td>${payTotPerAff.map(v=>`<td class="exec-total">${v>0?`<span class="exec-red">${v}</span>`:v}</td>`).join('')}<td class="exec-total">${payGrandTot>0?`<span class="exec-red">${payGrandTot}</span>`:payGrandTot}</td></tr>`;
 
   el.innerHTML=`
     <div class="exec-section">
@@ -2589,9 +2583,9 @@ function otRenderExec(){
       </table></div>
     </div>
     <div class="exec-section">
-      <div class="exec-section-title">B. Payroll Inclusion <span class="exec-note">Click any cell to edit count${period?' — '+period:''}</span></div>
+      <div class="exec-section-title">B. Payroll Inclusion <span class="exec-note">Auto-counted from TK Monitoring exclusion records${period?' — '+period:''} &nbsp;|&nbsp; ${payGrandTot} record${payGrandTot!==1?'s':''} total</span></div>
       <div class="exec-table-wrap"><table class="exec-table">
-        <thead>${thRow}</thead>
+        <thead>${piThRow}</thead>
         <tbody>${payrollRows}${payTotalRow}</tbody>
       </table></div>
     </div>
@@ -2606,41 +2600,6 @@ function otRenderExec(){
         </tbody>
       </table></div>
     </div>`;
-
-  // Wire click-to-edit on payroll inclusion cells
-  el.querySelectorAll('.pi-cell').forEach(span=>{
-    span.addEventListener('click',function(){
-      if(this.querySelector('input'))return;
-      const cur=parseInt(this.textContent)||0;
-      const inp=document.createElement('input');
-      inp.type='number';inp.min='0';inp.value=cur;
-      inp.style.cssText='width:52px;padding:2px 4px;border:1px solid var(--blue2);border-radius:4px;font-size:12px;font-weight:700;text-align:center;color:var(--navy)';
-      this.textContent='';
-      this.appendChild(inp);
-      inp.focus();inp.select();
-      const commit=()=>{
-        const v=Math.max(0,parseInt(inp.value)||0);
-        const r=this.getAttribute('data-reason');
-        const a=this.getAttribute('data-aff');
-        piSet(r,a,v);
-        this.textContent=v;
-        this.style.color=v>0?'var(--red)':'var(--text3)';
-        this.style.fontWeight=v>0?'700':'normal';
-        // update row total
-        const rowId='pi-tot-'+r.replace(/\W/g,'_');
-        const rowTotEl=document.getElementById(rowId);
-        if(rowTotEl){
-          const allData=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
-          const scope=allData[this.getAttribute('data-pi')]||{};
-          const rowTot=affs.reduce((s,af)=>(scope[r]&&scope[r][af]?scope[r][af]:0)+s,0);
-          rowTotEl.textContent=rowTot;
-          rowTotEl.className=rowTot>0?'exec-total exec-red':'exec-total';
-        }
-      };
-      inp.addEventListener('blur',commit);
-      inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape'){inp.value=cur;inp.blur();}});
-    });
-  });
 
   // Populate affiliate checkboxes for comparison section
   const cmpList=document.getElementById('cmp-aff-list');

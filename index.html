@@ -2575,8 +2575,8 @@ async function otRenderExec(){
     if(piDateTo&&r.date&&r.date>piDateTo)return false;
     return true;
   });
-  // Merge affiliates from timesheet uploads AND payroll inclusion records
-  const piAffs=[...new Set([...affs,...scopedHR.map(r=>r.aff).filter(Boolean)])].sort();
+  // Only show affiliates that have uploaded OT timesheets (same columns as Section A)
+  const piAffs=affs;
   // Count by reason × affiliate
   const piCountMap={};
   scopedHR.forEach(r=>{

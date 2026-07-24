@@ -2543,28 +2543,40 @@ async function otRenderExec(){
   }catch(e){/* offline — use cached localStorage */}
   const aff=document.getElementById('ot-exec-aff').value;
   const period=document.getElementById('ot-exec-period').value;
-  const filtered=otGetFiltered(aff,period);
-  const allEmps=otFlatEmployees(filtered,'','','');
+  // All imports (no period filter) → determines which affiliates show as columns
+  const allImports=otGetFiltered(aff,'');
   const el=document.getElementById('ot-exec-content');
 
-  if(!allEmps.length){
+  if(!allImports.length){
     el.innerHTML='<div class="ot-empty"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><p>No data available. Upload timesheets to get started.</p></div>';
     return;
   }
 
+  // Period-filtered imports → actual numbers shown in cells
+  const filtered=otGetFiltered(aff,period);
+  const periodEmps=otFlatEmployees(filtered,'','','');
+
   // Aggregate by affiliate — exclude ABC-RANKS from exec dashboard display
   const EXEC_EXCL_AFFS=new Set(['ABC-RANKS']);
   const affMap={};
-  allEmps.forEach(e=>{
+  // Seed all affiliates that have any upload (so columns always appear)
+  allImports.forEach(i=>{
+    const a=i.affiliate||'Unknown';
+    if(EXEC_EXCL_AFFS.has(a))return;
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,hasPeriod:false};
+  });
+  // Fill numbers from the period-filtered employees
+  periodEmps.forEach(e=>{
     const a=e.affiliate||'Unknown';
     if(EXEC_EXCL_AFFS.has(a))return;
-    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0};
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,hasPeriod:false};
     affMap[a].reg=round2(affMap[a].reg+e.regularHours);
     affMap[a].ot=round2(affMap[a].ot+e.overtimeHours);
     affMap[a].total=round2(affMap[a].total+e.totalHours);
     affMap[a].tardy=round2(affMap[a].tardy+(e.tardyHours||0));
     affMap[a].abs=round2(affMap[a].abs+(e.absentHours||0));
     affMap[a].emps++;
+    affMap[a].hasPeriod=true;
   });
   const affs=Object.keys(affMap).sort();
   const totReg=round2(affs.reduce((s,a)=>s+affMap[a].reg,0));
@@ -2584,14 +2596,16 @@ async function otRenderExec(){
     return `<tr><td>${label}</td>${vals.map(v=>`<td class="${cls}">${v}</td>`).join('')}<td class="${totCls}">${totVal}</td></tr>`;
   };
 
-  const otPcts=affs.map(a=>{return affMap[a].reg>0?fmtNum(round2((affMap[a].ot/affMap[a].reg)*100))+'%':'0.00%';});
+  // When a period is selected, affiliates without data for that period show '—'
+  const nd=(a)=>period&&!affMap[a].hasPeriod;
+  const otPcts=affs.map(a=>{if(nd(a))return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].ot/affMap[a].reg)*100))+'%':'0.00%';});
   const totOTPct2=totReg>0?round2((totOT/totReg)*100):0;
-  const regHrs=affs.map(a=>fmtNum(affMap[a].reg));
-  const tthPcts=affs.map(a=>{if(!affMap[a].tardy)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].tardy/affMap[a].reg)*100))+'%':'0.00%';});
+  const regHrs=affs.map(a=>nd(a)?'—':fmtNum(affMap[a].reg));
+  const tthPcts=affs.map(a=>{if(nd(a)||!affMap[a].tardy)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].tardy/affMap[a].reg)*100))+'%':'0.00%';});
   const tthTot=hasTardy?(totReg>0?fmtNum(round2((totTardy/totReg)*100))+'%':'0.00%'):'—';
-  const tahPcts=affs.map(a=>{if(!affMap[a].abs)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].abs/affMap[a].reg)*100))+'%':'0.00%';});
+  const tahPcts=affs.map(a=>{if(nd(a)||!affMap[a].abs)return '—';return affMap[a].reg>0?fmtNum(round2((affMap[a].abs/affMap[a].reg)*100))+'%':'0.00%';});
   const tahTot=hasAbs?(totReg>0?fmtNum(round2((totAbs/totReg)*100))+'%':'0.00%'):'—';
-  const lostPcts=affs.map(a=>{const lost=round2(affMap[a].tardy+affMap[a].abs);if(!lost)return '—';return affMap[a].reg>0?fmtNum(round2((lost/affMap[a].reg)*100))+'%':'0.00%';});
+  const lostPcts=affs.map(a=>{if(nd(a))return '—';const lost=round2(affMap[a].tardy+affMap[a].abs);if(!lost)return '—';return affMap[a].reg>0?fmtNum(round2((lost/affMap[a].reg)*100))+'%':'0.00%';});
   const lostTot=(hasTardy||hasAbs)?(totReg>0?fmtNum(round2((round2(totTardy+totAbs)/totReg)*100))+'%':'0.00%'):'—';
 
   // B. Payroll Inclusion — auto-read from Payroll Inclusion page (hr_records)

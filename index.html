@@ -308,6 +308,8 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .tk-kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
 .tk-excl-del{background:none;border:none;cursor:pointer;color:var(--red);padding:2px 6px;font-size:12px;border-radius:4px}
 .tk-excl-del:hover{background:#fee2e2}
+.pi-cell{display:inline-block;min-width:24px;border-radius:4px;padding:1px 4px;transition:background .12s}
+.pi-cell:hover{background:#e8f0ff;outline:1px dashed var(--blue2)}
 /* OT COMPARISON */
 .cmp-aff-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
 .cmp-aff-cb-label{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text);transition:background .15s,border-color .15s}
@@ -2481,6 +2483,17 @@ function otBarChart(containerId,data,labelKey,valueKey){
   }).join('');
 }
 
+// ── Payroll Inclusion inline-edit helpers ─────────────────────────────
+function piRefreshTotals(affs,reasons,piKey){
+  const allData=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
+  const scope=allData[piKey]||{};
+  reasons.forEach(r=>{
+    const rowTot=affs.reduce((s,a)=>s+(scope[r]&&scope[r][a]?scope[r][a]:0),0);
+    const rowEl=document.getElementById('pi-tot-'+r.replace(/\W/g,'_'));
+    if(rowEl){rowEl.textContent=rowTot;rowEl.className=rowTot>0?'exec-total exec-red':'exec-total';}
+  });
+}
+
 // ── Executive Dashboard ───────────────────────────────────────────────
 function otRenderExec(){
   const aff=document.getElementById('ot-exec-aff').value;
@@ -2526,33 +2539,40 @@ function otRenderExec(){
   const tthPcts=affs.map(a=>{const t=round2(affMap[a].reg+affMap[a].ot);return hasTardy?(t>0?fmtNum(round2((affMap[a].tardy/t)*100))+'%':'0.00%'):'—';});
   const tthTot=hasTardy?(totTotal>0?fmtNum(round2((totTardy/totTotal)*100))+'%':'0.00%'):'—';
 
-  // B. Payroll Inclusion — counts from TK Monitoring exclusion log
+  // B. Payroll Inclusion — inline-editable counts saved per period+affiliate key
   const PAYROLL_REASONS=['Late Filing','Wrong Filing','Late Approval','Early Cut-off','System Error','New Hire/Transfer','Excluded','Shift Code Concerns','Timekeeper Error'];
-  const allExcls=tkLoad();
-  // Filter exclusions to same period/aff scope as the exec dashboard
-  const scopedExcls=allExcls.filter(e=>{
-    if(period&&e.periodLabel!==period)return false;
-    if(aff&&e.affiliate!==aff)return false;
-    return true;
-  });
-  // Build reason × affiliate count map
-  const exclCountMap={};
-  scopedExcls.forEach(e=>{
-    const r=e.reason||'Other';
-    if(!exclCountMap[r])exclCountMap[r]={};
-    exclCountMap[r][e.affiliate]=(exclCountMap[r][e.affiliate]||0)+1;
-  });
-  const payrollRows=PAYROLL_REASONS.map(label=>{
-    const reasonMap=exclCountMap[label]||{};
-    const vals=affs.map(a=>reasonMap[a]||0);
-    const rowTot=vals.reduce((s,v)=>s+v,0);
-    const fmtVal=v=>v>0?`<span style="color:var(--red);font-weight:700">${v}</span>`:'0';
-    const fmtTot=v=>v>0?`<span class="exec-red">${v}</span>`:'<span style="color:var(--text3)">0</span>';
-    return `<tr><td>${label}</td>${vals.map(v=>`<td>${fmtVal(v)}</td>`).join('')}<td class="exec-total">${fmtTot(rowTot)}</td></tr>`;
+  const piKey=`pi_${period||'ALL'}_${aff||'ALL'}`;
+  const piData=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
+  const piScope=piData[piKey]||{};
+
+  function piGet(reason,affiliate){return(piScope[reason]&&piScope[reason][affiliate])||0;}
+  function piSet(reason,affiliate,val){
+    const all=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
+    if(!all[piKey])all[piKey]={};
+    if(!all[piKey][reason])all[piKey][reason]={};
+    all[piKey][reason][affiliate]=val;
+    localStorage.setItem('payroll_inclusion',JSON.stringify(all));
+    // refresh totals row only
+    piRefreshTotals(affs,PAYROLL_REASONS,piKey);
+  }
+
+  const piCell=(reason,affiliate)=>{
+    const v=piGet(reason,affiliate);
+    const dkey=`data-pi="${piKey}" data-reason="${reason.replace(/"/g,'&quot;')}" data-aff="${affiliate}"`;
+    const style=v>0?'color:var(--red);font-weight:700':'color:var(--text3)';
+    return `<td><span class="pi-cell" ${dkey} title="Click to edit" style="cursor:pointer;${style}">${v}</span></td>`;
+  };
+
+  const payrollRows=PAYROLL_REASONS.map(reason=>{
+    const cells=affs.map(a=>piCell(reason,a)).join('');
+    const rowTot=affs.reduce((s,a)=>s+piGet(reason,a),0);
+    const totStyle=rowTot>0?'class="exec-total exec-red"':'class="exec-total"';
+    return `<tr><td>${reason}</td>${cells}<td ${totStyle} id="pi-tot-${reason.replace(/\W/g,'_')}">${rowTot}</td></tr>`;
   }).join('');
-  const payTotPerAff=affs.map(a=>scopedExcls.filter(e=>e.affiliate===a).length);
+
+  const payTotPerAff=affs.map(a=>PAYROLL_REASONS.reduce((s,r)=>s+piGet(r,a),0));
   const payGrandTot=payTotPerAff.reduce((s,v)=>s+v,0);
-  const payTotalRow=`<tr style="font-weight:700;background:#f0f4ff"><td>Total Exclusions</td>${payTotPerAff.map(v=>`<td class="exec-total">${v>0?`<span class="exec-red">${v}</span>`:v}</td>`).join('')}<td class="exec-total">${payGrandTot>0?`<span class="exec-red">${payGrandTot}</span>`:payGrandTot}</td></tr>`;
+  const payTotalRow=`<tr style="font-weight:700;background:#f0f4ff" id="pi-grand-row"><td>TOTAL</td>${payTotPerAff.map((v,i)=>`<td class="exec-total" id="pi-col-tot-${i}">${v>0?`<span class="exec-red">${v}</span>`:v}</td>`).join('')}<td class="exec-total">${payGrandTot>0?`<span class="exec-red">${payGrandTot}</span>`:payGrandTot}</td></tr>`;
 
   el.innerHTML=`
     <div class="exec-section">
@@ -2569,7 +2589,7 @@ function otRenderExec(){
       </table></div>
     </div>
     <div class="exec-section">
-      <div class="exec-section-title">B. Payroll Inclusion <span class="exec-note">Counts sourced from TK Monitoring exclusion records${period?' — '+period:''}</span></div>
+      <div class="exec-section-title">B. Payroll Inclusion <span class="exec-note">Click any cell to edit count${period?' — '+period:''}</span></div>
       <div class="exec-table-wrap"><table class="exec-table">
         <thead>${thRow}</thead>
         <tbody>${payrollRows}${payTotalRow}</tbody>
@@ -2586,6 +2606,41 @@ function otRenderExec(){
         </tbody>
       </table></div>
     </div>`;
+
+  // Wire click-to-edit on payroll inclusion cells
+  el.querySelectorAll('.pi-cell').forEach(span=>{
+    span.addEventListener('click',function(){
+      if(this.querySelector('input'))return;
+      const cur=parseInt(this.textContent)||0;
+      const inp=document.createElement('input');
+      inp.type='number';inp.min='0';inp.value=cur;
+      inp.style.cssText='width:52px;padding:2px 4px;border:1px solid var(--blue2);border-radius:4px;font-size:12px;font-weight:700;text-align:center;color:var(--navy)';
+      this.textContent='';
+      this.appendChild(inp);
+      inp.focus();inp.select();
+      const commit=()=>{
+        const v=Math.max(0,parseInt(inp.value)||0);
+        const r=this.getAttribute('data-reason');
+        const a=this.getAttribute('data-aff');
+        piSet(r,a,v);
+        this.textContent=v;
+        this.style.color=v>0?'var(--red)':'var(--text3)';
+        this.style.fontWeight=v>0?'700':'normal';
+        // update row total
+        const rowId='pi-tot-'+r.replace(/\W/g,'_');
+        const rowTotEl=document.getElementById(rowId);
+        if(rowTotEl){
+          const allData=JSON.parse(localStorage.getItem('payroll_inclusion')||'{}');
+          const scope=allData[this.getAttribute('data-pi')]||{};
+          const rowTot=affs.reduce((s,af)=>(scope[r]&&scope[r][af]?scope[r][af]:0)+s,0);
+          rowTotEl.textContent=rowTot;
+          rowTotEl.className=rowTot>0?'exec-total exec-red':'exec-total';
+        }
+      };
+      inp.addEventListener('blur',commit);
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape'){inp.value=cur;inp.blur();}});
+    });
+  });
 
   // Populate affiliate checkboxes for comparison section
   const cmpList=document.getElementById('cmp-aff-list');

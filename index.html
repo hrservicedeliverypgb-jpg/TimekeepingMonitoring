@@ -2170,7 +2170,14 @@ function otUpPeriodChange(){
 
 function otPopulatePeriodDropdowns(){
   const imports=otLoad();
-  const periods=[...new Set(imports.map(i=>i.periodLabel).filter(Boolean))].sort().reverse();
+  // Build a map of periodLabel -> periodStart for date-based sorting
+  const psMap={};
+  imports.forEach(i=>{if(i.periodStart&&!psMap[i.periodLabel])psMap[i.periodLabel]=i.periodStart;});
+  const periods=[...new Set(imports.map(i=>i.periodLabel).filter(Boolean))].sort((a,b)=>{
+    const da=psMap[a]?new Date(psMap[a]):new Date(0);
+    const db=psMap[b]?new Date(psMap[b]):new Date(0);
+    return db-da; // newest first
+  });
   const periodSelectors=['ot-exec-period','ot-dept-period','ot-cc-period','ot-emp-period'];
   periodSelectors.forEach(id=>{
     const el=document.getElementById(id);
@@ -2178,7 +2185,7 @@ function otPopulatePeriodDropdowns(){
     const cur=el.value;
     while(el.options.length>1)el.remove(1);
     periods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;el.appendChild(o);});
-    if(cur)el.value=cur;
+    if(cur&&periods.includes(cur))el.value=cur;
   });
   otPopulateRptFilters();
 }
@@ -3240,7 +3247,14 @@ function otPopulateRptFilters(){
   // Covering periods depend on the selected year
   const selYear=yearSel.value;
   const curPeriod=periodSel.value;
-  const periods=[...new Set(imports.filter(i=>!selYear||otImportYear(i)===selYear).map(i=>i.periodLabel).filter(Boolean))].sort().reverse();
+  const rptImps=imports.filter(i=>!selYear||otImportYear(i)===selYear);
+  const rptPsMap={};
+  rptImps.forEach(i=>{if(i.periodStart&&!rptPsMap[i.periodLabel])rptPsMap[i.periodLabel]=i.periodStart;});
+  const periods=[...new Set(rptImps.map(i=>i.periodLabel).filter(Boolean))].sort((a,b)=>{
+    const da=rptPsMap[a]?new Date(rptPsMap[a]):new Date(0);
+    const db=rptPsMap[b]?new Date(rptPsMap[b]):new Date(0);
+    return db-da; // newest first
+  });
   while(periodSel.options.length>1)periodSel.remove(1);
   periods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;periodSel.appendChild(o);});
   if(curPeriod&&periods.includes(curPeriod))periodSel.value=curPeriod;
@@ -3297,7 +3311,12 @@ function otRenderRpt(){
   `;
 
   const tbody=document.getElementById('ot-rpt-tbody');
-  if(!employees.length){tbody.innerHTML='<tr class="empty-row"><td colspan="4">No records match the selected filters.</td></tr>';return;}
+  if(!employees.length){
+    const{period,aff}=otRptGetData();
+    const hint=period?`No timesheet data found for period <strong>"${period}"</strong>${aff?' and affiliate '+aff:''}. The upload for this period may be missing — please re-upload the timesheet in the <strong>Upload</strong> tab.`:'No records match the selected filters.';
+    tbody.innerHTML=`<tr class="empty-row"><td colspan="4" style="text-align:left;padding:16px">${hint}</td></tr>`;
+    return;
+  }
 
   const pctFmt=p=>p.toFixed(2)+'%';
   const spacer='<tr class="otr-spacer"><td colspan="4"></td></tr>';

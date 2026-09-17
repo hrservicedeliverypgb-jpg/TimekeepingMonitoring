@@ -1979,17 +1979,22 @@ const OT_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/ot_imports.
 function round2(v){return Math.round((parseFloat(v)||0)*100)/100;}
 
 // ── Storage + Firebase sync ───────────────────────────────────────────
+// In-memory fallback when localStorage is full — Firebase is the real store
+let _otMemCache=null;
 function otLoad(){
+  if(_otMemCache!==null)return _otMemCache;
   try{return JSON.parse(localStorage.getItem('ot_imports')||'[]');}
   catch(e){console.warn('otLoad: corrupted data',e);return[];}
 }
 function otSave(arr){
   try{
     localStorage.setItem('ot_imports',JSON.stringify(arr));
+    _otMemCache=null;
   }catch(e){
-    toast('Storage full — upload could not be saved. Please delete old imports to free space.','error');
-    console.error('otSave quota exceeded',e);
-    return false;
+    // localStorage full — keep in memory so this session still works;
+    // Firebase receives the full data via otCloudSave below
+    _otMemCache=arr;
+    console.warn('otSave: localStorage full, using memory cache',e);
   }
   otCloudSave(arr);
   return true;
@@ -2026,8 +2031,10 @@ async function otCloudPull(){
     });
     try{
       localStorage.setItem('ot_imports',JSON.stringify(merged));
+      _otMemCache=null;
     }catch(e){
-      console.warn('otCloudPull: could not update localStorage (quota?)',e);
+      _otMemCache=merged;
+      console.warn('otCloudPull: localStorage full, using memory cache',e);
     }
   }catch(e){console.warn('OT cloud pull failed',e);}
 }

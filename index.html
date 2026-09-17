@@ -1987,11 +1987,12 @@ function otSave(arr){
   try{
     localStorage.setItem('ot_imports',JSON.stringify(arr));
   }catch(e){
-    toast('Storage full — could not save. Please clear old imports to free space.','error');
+    toast('Storage full — upload could not be saved. Please delete old imports to free space.','error');
     console.error('otSave quota exceeded',e);
-    return;
+    return false;
   }
   otCloudSave(arr);
+  return true;
 }
 async function otCloudSave(arr){
   try{
@@ -2003,12 +2004,30 @@ async function otCloudPull(){
     const res=await fetch(OT_FB_URL);
     if(!res.ok)return;
     const data=await res.json();
-    if(Array.isArray(data)&&data.length){
-      // Merge: preserve local-only records not yet synced to Firebase (avoids race with otCloudSave)
-      const local=otLoad();
-      const fbKeys=new Set(data.map(i=>i.affiliate+'|'+i.periodLabel));
-      const localOnly=local.filter(i=>!fbKeys.has(i.affiliate+'|'+i.periodLabel));
-      localStorage.setItem('ot_imports',JSON.stringify([...data,...localOnly]));
+    if(!Array.isArray(data)||!data.length)return;
+    const local=otLoad();
+    const localMap={};
+    local.forEach(i=>{if(i.affiliate&&i.periodLabel)localMap[i.affiliate+'|'+i.periodLabel]=i;});
+    const fbMap={};
+    data.forEach(i=>{if(i.affiliate&&i.periodLabel)fbMap[i.affiliate+'|'+i.periodLabel]=i;});
+    const allKeys=new Set([...Object.keys(localMap),...Object.keys(fbMap)]);
+    const merged=[];
+    allKeys.forEach(key=>{
+      const loc=localMap[key];
+      const fb=fbMap[key];
+      if(loc&&fb){
+        // Local wins on tie — a just-uploaded record beats stale Firebase data
+        const locT=loc.uploadedAt?new Date(loc.uploadedAt).getTime():0;
+        const fbT=fb.uploadedAt?new Date(fb.uploadedAt).getTime():0;
+        merged.push(locT>=fbT?loc:fb);
+      } else {
+        merged.push(loc||fb);
+      }
+    });
+    try{
+      localStorage.setItem('ot_imports',JSON.stringify(merged));
+    }catch(e){
+      console.warn('otCloudPull: could not update localStorage (quota?)',e);
     }
   }catch(e){console.warn('OT cloud pull failed',e);}
 }
@@ -2483,7 +2502,7 @@ function otCommitSave(imports,dupIdx,affiliate,periodLabel,periodStart,periodEnd
   };
   if(dupIdx!==-1)imports.splice(dupIdx,1,rec);
   else imports.push(rec);
-  otSave(imports);
+  if(!otSave(imports)){return;}
   otPopulatePeriodDropdowns();
   otCancelUpload();
   toast(`Import saved — ${employees.length} employees ✓`,'success');

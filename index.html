@@ -1979,9 +1979,18 @@ const OT_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/ot_imports.
 function round2(v){return Math.round((parseFloat(v)||0)*100)/100;}
 
 // ── Storage + Firebase sync ───────────────────────────────────────────
-function otLoad(){return JSON.parse(localStorage.getItem('ot_imports')||'[]');}
+function otLoad(){
+  try{return JSON.parse(localStorage.getItem('ot_imports')||'[]');}
+  catch(e){console.warn('otLoad: corrupted data',e);return[];}
+}
 function otSave(arr){
-  localStorage.setItem('ot_imports',JSON.stringify(arr));
+  try{
+    localStorage.setItem('ot_imports',JSON.stringify(arr));
+  }catch(e){
+    toast('Storage full — could not save. Please clear old imports to free space.','error');
+    console.error('otSave quota exceeded',e);
+    return;
+  }
   otCloudSave(arr);
 }
 async function otCloudSave(arr){
@@ -2044,9 +2053,18 @@ function otInitPage(){
 // ── Covering periods (reference list for uploads) ─────────────────────
 const OTP_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/ot_periods.json';
 
-function otpLoad(){return JSON.parse(localStorage.getItem('ot_periods')||'[]');}
+function otpLoad(){
+  try{return JSON.parse(localStorage.getItem('ot_periods')||'[]');}
+  catch(e){console.warn('otpLoad: corrupted data',e);return[];}
+}
 function otpSave(arr){
-  localStorage.setItem('ot_periods',JSON.stringify(arr));
+  try{
+    localStorage.setItem('ot_periods',JSON.stringify(arr));
+  }catch(e){
+    toast('Storage full — could not save covering period.','error');
+    console.error('otpSave quota exceeded',e);
+    return;
+  }
   otpCloudSave(arr);
 }
 async function otpCloudSave(arr){
@@ -2180,6 +2198,7 @@ function otHandleFile(file){
   if(!/\.(xls|xlsx)$/i.test(file.name)){toast('Only .xls and .xlsx files are supported.','error');return;}
   const reader=new FileReader();
   reader.onload=e=>otParseWorkbook(e.target.result,file.name);
+  reader.onerror=()=>toast('Could not read file. Try again or use a different file.','error');
   reader.readAsArrayBuffer(file);
 }
 

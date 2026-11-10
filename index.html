@@ -2633,7 +2633,7 @@ async function otRenderExec(){
     affMap[a].emps++;
     if((e.lateHours||0)>0)affMap[a].lateCount++;
     if((e.absentHours||0)>0)affMap[a].absCount++;
-    if((e.overtimeHours||0)>=OT_ALERT_HRS){affMap[a].otFlagCount++;affMap[a].otFlagHours=round2(affMap[a].otFlagHours+(e.overtimeHours||0));}
+    if((e.overtimeHours||0)>OT_ALERT_HRS){affMap[a].otFlagCount++;affMap[a].otFlagHours=round2(affMap[a].otFlagHours+(e.overtimeHours||0));}
     if(!(e.lateHours||0)&&!(e.absentHours||0)&&!(e.undertimeHours||0))affMap[a].perfectCount++;
     affMap[a].hasPeriod=true;
   });
@@ -3323,7 +3323,7 @@ function otDeleteImport(id){
 }
 
 // ── Reports ───────────────────────────────────────────────────────────
-const OT_ALERT_HRS=14; // employee OT hrs at/above this per cut-off are flagged red
+const OT_ALERT_HRS=12; // employee OT hrs above this per cut-off are flagged red
 
 function otImportYear(imp){
   const d=imp.periodStart||imp.periodEnd;
@@ -3423,7 +3423,7 @@ function otRenderRpt(){
   const dataRow=(m,alert)=>`<tr>
       <td class="otr-name">${m.label}</td>
       <td class="otr-num">${fmtNum(m.reg)}</td>
-      <td class="otr-num${alert&&m.ot>=OT_ALERT_HRS?' otr-alert':''}">${m.ot?fmtNum(m.ot):'0'}</td>
+      <td class="otr-num${alert&&m.ot>OT_ALERT_HRS?' otr-alert':''}">${m.ot?fmtNum(m.ot):'0'}</td>
       <td class="otr-num">${pctFmt(m.pct)}</td>
     </tr>`;
 
@@ -3504,7 +3504,7 @@ async function otExportExcel(){
         if(i===3)c.numFmt='0.00%';
         else if(i>0)c.numFmt='#,##0.##';
       });
-      if(highlight&&m.ot>=OT_ALERT_HRS){
+      if(highlight&&m.ot>OT_ALERT_HRS){
         const c=row.getCell(3);
         c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+C.red}};
         c.font={name:'Arial',size:9,bold:true,color:{argb:'FF'+C.redText}};

@@ -2628,7 +2628,7 @@ async function otRenderExec(){
     affMap[a].tardy=round2(affMap[a].tardy+(e.tardyHours||0));
     affMap[a].abs=round2(affMap[a].abs+(e.absentHours||0));
     affMap[a].emps++;
-    if((e.tardyHours||0)>0)affMap[a].lateCount++;
+    if((e.lateHours||0)>0)affMap[a].lateCount++;
     affMap[a].hasPeriod=true;
   });
   const affs=Object.keys(affMap).sort();

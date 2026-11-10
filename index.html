@@ -2366,9 +2366,8 @@ function otParseSheet(ws,sheetName){
     const lateHours    =round2(parseFloat(colMap.late!=null?row[colMap.late]:0)||0);
     const undertimeHours=round2(parseFloat(colMap.undertime!=null?row[colMap.undertime]:0)||0);
     const tardyHours   =round2(lateHours+undertimeHours);
-    const absentRaw    =round2(parseFloat(colMap.abshours!=null?row[colMap.abshours]:0)||0);
+    const absentHours  =round2(parseFloat(colMap.abshours!=null?row[colMap.abshours]:0)||0);
     const lwpayHours   =round2(parseFloat(colMap.lwpay!=null?row[colMap.lwpay]:0)||0);
-    const absentHours  =round2(Math.max(0,absentRaw-lwpayHours));
     employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage,lateHours,undertimeHours,tardyHours,absentHours,lwpayHours});
   }
   return{employees,colMap,otColNames,headerRowIdx};

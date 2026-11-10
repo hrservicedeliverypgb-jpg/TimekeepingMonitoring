@@ -2246,7 +2246,7 @@ const OT_COL_KEYWORDS={
   reg:      ['reghrs','rghrs','reg hrs','reg hours','regular hours','basichrs','basic hrs','basic hours','ordinary hours'],
   rgot:     ['rgot','rg ot','reg ot'],
   abshours: ['abshrs','abshours','abs hrs','abs hours','absence hrs','absence hours','absent hours'],
-  ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours'],
+  ot:       ['overtime hours','ot hours','ot hrs','ot hr','over time','extra hours','total ot','ot total'],
   late:     ['late','late hrs','late hours','tardiness','tardy hrs','tardy hours','lates','late min','lateness'],
   undertime:['undertime','ut hrs','ut hours','under time hrs','undertime hrs','undertime hours','ut'],
   lwpay:    ['lwpay','lw pay','leave with pay','leave pay','lwp','leavewithpay']
@@ -2283,7 +2283,13 @@ function otBuildName(row,colMap){
 function otCalcOT(row,colMap){
   if(colMap.rgot!=null){
     if(colMap.abshours!=null&&colMap.abshours>colMap.rgot){
-      // Sum every column from RGOT up to (not including) ABSHOURS
+      // If a named OT-total column (e.g. "OT HR") exists within the range,
+      // use it directly — it already summarises the sub-columns, so summing
+      // the whole range would double-count it.
+      if(colMap.ot!=null&&colMap.ot>colMap.rgot&&colMap.ot<colMap.abshours){
+        return round2(parseFloat(row[colMap.ot])||0);
+      }
+      // No named total column — sum every column from RGOT up to (not including) ABSHOURS
       let sum=0;
       for(let ci=colMap.rgot;ci<colMap.abshours;ci++) sum+=parseFloat(row[ci])||0;
       return round2(sum);

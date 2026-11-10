@@ -2615,19 +2615,20 @@ async function otRenderExec(){
   allImports.forEach(i=>{
     const a=i.affiliate||'Unknown';
     if(EXEC_EXCL_AFFS.has(a))return;
-    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,hasPeriod:false};
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,lateCount:0,hasPeriod:false};
   });
   // Fill numbers from the period-filtered employees
   periodEmps.forEach(e=>{
     const a=e.affiliate||'Unknown';
     if(EXEC_EXCL_AFFS.has(a))return;
-    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,hasPeriod:false};
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,lateCount:0,hasPeriod:false};
     affMap[a].reg=round2(affMap[a].reg+e.regularHours);
     affMap[a].ot=round2(affMap[a].ot+e.overtimeHours);
     affMap[a].total=round2(affMap[a].total+e.totalHours);
     affMap[a].tardy=round2(affMap[a].tardy+(e.tardyHours||0));
     affMap[a].abs=round2(affMap[a].abs+(e.absentHours||0));
     affMap[a].emps++;
+    if((e.tardyHours||0)>0)affMap[a].lateCount++;
     affMap[a].hasPeriod=true;
   });
   const affs=Object.keys(affMap).sort();
@@ -2659,6 +2660,13 @@ async function otRenderExec(){
   const tahTot=hasAbs?fmtNum(totAbs):'—';
   const lostPcts=affs.map(a=>{if(nd(a))return '—';const lost=round2(affMap[a].tardy+affMap[a].abs);if(!lost)return '—';return affMap[a].reg>0?fmtNum(round2((lost/affMap[a].reg)*100))+'%':'0.00%';});
   const lostTot=(hasTardy||hasAbs)?(totReg>0?fmtNum(round2((round2(totTardy+totAbs)/totReg)*100))+'%':'0.00%'):'—';
+
+  // C. Tardiness counts
+  const totLateCount=affs.reduce((s,a)=>s+affMap[a].lateCount,0);
+  const totEmpsAll=affs.reduce((s,a)=>s+affMap[a].emps,0);
+  const lateCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].lateCount>0?affMap[a].lateCount:'—';});
+  const latePctVals=affs.map(a=>{if(nd(a)||!affMap[a].lateCount||!affMap[a].emps)return'—';return fmtNum(round2((affMap[a].lateCount/affMap[a].emps)*100))+'%';});
+  const totLatePct=totEmpsAll>0&&totLateCount>0?fmtNum(round2((totLateCount/totEmpsAll)*100))+'%':'—';
 
   // B. Payroll Inclusion — auto-read from Payroll Inclusion page (hr_records)
   const PAYROLL_REASONS=['New Hire/Transfer','Late Filing','Excluded last cut off','Timekeeper Error','Wrong Filing','Late Approval','Shift Code Concerns','System Error','Early Cutoff'];
@@ -2721,8 +2729,8 @@ async function otRenderExec(){
       <div class="exec-table-wrap"><table class="exec-table">
         <thead>${thRow}</thead>
         <tbody>
-          ${mkRow('No. of Employees Who Are Late',affs.map(()=>'—'),'—',false)}
-          ${mkRow('% vs Head Count',affs.map(()=>'—'),'—',false)}
+          ${mkRow('No. of Employees Who Are Late',lateCountVals,totLateCount>0?totLateCount:'—',totLateCount>0)}
+          ${mkRow('% vs Head Count',latePctVals,totLatePct,totLateCount>0)}
           ${mkRow('Submitted DA',affs.map(()=>'—'),'—',false)}
         </tbody>
       </table></div>

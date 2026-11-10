@@ -2259,6 +2259,7 @@ function otDetectCol(header){
   // Exact-match first for short ambiguous tokens
   if(h==='rgot'||h==='rg ot')return 'rgot';
   if(h==='abshrs'||h==='abshours'||h==='abs hrs'||h==='abs hours')return 'abshours';
+  if(h==='ot')return 'ot';
   if(h==='mi')return 'mi';
   if(h==='cc')return 'cc';
   for(const[key,kws]of Object.entries(OT_COL_KEYWORDS)){

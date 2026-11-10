@@ -2248,7 +2248,8 @@ const OT_COL_KEYWORDS={
   abshours: ['abshrs','abshours','abs hrs','abs hours','absence hrs','absence hours','absent hours'],
   ot:       ['overtime hours','ot hours','ot hrs','over time','extra hours'],
   late:     ['late','late hrs','late hours','tardiness','tardy hrs','tardy hours','lates','late min','lateness'],
-  undertime:['undertime','ut hrs','ut hours','under time hrs','undertime hrs','undertime hours','ut']
+  undertime:['undertime','ut hrs','ut hours','under time hrs','undertime hrs','undertime hours','ut'],
+  lwpay:    ['lwpay','lw pay','leave with pay','leave pay','lwp','leavewithpay']
 };
 
 function otDetectCol(header){
@@ -2359,8 +2360,10 @@ function otParseSheet(ws,sheetName){
     const lateHours    =round2(parseFloat(colMap.late!=null?row[colMap.late]:0)||0);
     const undertimeHours=round2(parseFloat(colMap.undertime!=null?row[colMap.undertime]:0)||0);
     const tardyHours   =round2(lateHours+undertimeHours);
-    const absentHours  =round2(parseFloat(colMap.abshours!=null?row[colMap.abshours]:0)||0);
-    employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage,lateHours,undertimeHours,tardyHours,absentHours});
+    const absentRaw    =round2(parseFloat(colMap.abshours!=null?row[colMap.abshours]:0)||0);
+    const lwpayHours   =round2(parseFloat(colMap.lwpay!=null?row[colMap.lwpay]:0)||0);
+    const absentHours  =round2(Math.max(0,absentRaw-lwpayHours));
+    employees.push({name,department:dept,costCenter:cc,regularHours,overtimeHours,totalHours,otPercentage,lateHours,undertimeHours,tardyHours,absentHours,lwpayHours});
   }
   return{employees,colMap,otColNames,headerRowIdx};
 }
@@ -2615,13 +2618,13 @@ async function otRenderExec(){
   allImports.forEach(i=>{
     const a=i.affiliate||'Unknown';
     if(EXEC_EXCL_AFFS.has(a))return;
-    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,lateCount:0,hasPeriod:false};
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,lateCount:0,absCount:0,otFlagCount:0,otFlagHours:0,perfectCount:0,hasPeriod:false};
   });
   // Fill numbers from the period-filtered employees
   periodEmps.forEach(e=>{
     const a=e.affiliate||'Unknown';
     if(EXEC_EXCL_AFFS.has(a))return;
-    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,lateCount:0,hasPeriod:false};
+    if(!affMap[a])affMap[a]={reg:0,ot:0,total:0,tardy:0,abs:0,emps:0,lateCount:0,absCount:0,otFlagCount:0,otFlagHours:0,perfectCount:0,hasPeriod:false};
     affMap[a].reg=round2(affMap[a].reg+e.regularHours);
     affMap[a].ot=round2(affMap[a].ot+e.overtimeHours);
     affMap[a].total=round2(affMap[a].total+e.totalHours);
@@ -2629,6 +2632,9 @@ async function otRenderExec(){
     affMap[a].abs=round2(affMap[a].abs+(e.absentHours||0));
     affMap[a].emps++;
     if((e.lateHours||0)>0)affMap[a].lateCount++;
+    if((e.absentHours||0)>0)affMap[a].absCount++;
+    if((e.overtimeHours||0)>=OT_ALERT_HRS){affMap[a].otFlagCount++;affMap[a].otFlagHours=round2(affMap[a].otFlagHours+(e.overtimeHours||0));}
+    if(!(e.lateHours||0)&&!(e.absentHours||0)&&!(e.undertimeHours||0))affMap[a].perfectCount++;
     affMap[a].hasPeriod=true;
   });
   const affs=Object.keys(affMap).sort();
@@ -2661,12 +2667,31 @@ async function otRenderExec(){
   const lostPcts=affs.map(a=>{if(nd(a))return '—';const lost=round2(affMap[a].tardy+affMap[a].abs);if(!lost)return '—';return affMap[a].reg>0?fmtNum(round2((lost/affMap[a].reg)*100))+'%':'0.00%';});
   const lostTot=(hasTardy||hasAbs)?(totReg>0?fmtNum(round2((round2(totTardy+totAbs)/totReg)*100))+'%':'0.00%'):'—';
 
-  // C. Tardiness counts
+  // C/D/E/F/G shared counts
   const totLateCount=affs.reduce((s,a)=>s+affMap[a].lateCount,0);
   const totEmpsAll=affs.reduce((s,a)=>s+affMap[a].emps,0);
   const lateCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].lateCount>0?affMap[a].lateCount:'—';});
   const latePctVals=affs.map(a=>{if(nd(a)||!affMap[a].lateCount||!affMap[a].emps)return'—';return fmtNum(round2((affMap[a].lateCount/affMap[a].emps)*100))+'%';});
   const totLatePct=totEmpsAll>0&&totLateCount>0?fmtNum(round2((totLateCount/totEmpsAll)*100))+'%':'—';
+  // D. Absenteeism
+  const totAbsCount=affs.reduce((s,a)=>s+affMap[a].absCount,0);
+  const absCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].absCount>0?affMap[a].absCount:'—';});
+  const absPctVals=affs.map(a=>{if(nd(a)||!affMap[a].absCount||!affMap[a].emps)return'—';return fmtNum(round2((affMap[a].absCount/affMap[a].emps)*100))+'%';});
+  const totAbsPct=totEmpsAll>0&&totAbsCount>0?fmtNum(round2((totAbsCount/totEmpsAll)*100))+'%':'—';
+  // E. OT Flags
+  const totOTFlagCount=affs.reduce((s,a)=>s+affMap[a].otFlagCount,0);
+  const totOTFlagHours=round2(affs.reduce((s,a)=>s+affMap[a].otFlagHours,0));
+  const otFlagCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].otFlagCount>0?affMap[a].otFlagCount:'—';});
+  const otFlagPctVals=affs.map(a=>{if(nd(a)||!affMap[a].otFlagCount||!affMap[a].emps)return'—';return fmtNum(round2((affMap[a].otFlagCount/affMap[a].emps)*100))+'%';});
+  const totOTFlagPct=totEmpsAll>0&&totOTFlagCount>0?fmtNum(round2((totOTFlagCount/totEmpsAll)*100))+'%':'—';
+  const otFlagHrsVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].otFlagHours>0?fmtNum(affMap[a].otFlagHours):'—';});
+  // F. Perfect Attendance
+  const totPerfectCount=affs.reduce((s,a)=>s+affMap[a].perfectCount,0);
+  const perfectCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].perfectCount>0?affMap[a].perfectCount:'—';});
+  const perfectPctVals=affs.map(a=>{if(nd(a)||!affMap[a].emps)return'—';return fmtNum(round2((affMap[a].perfectCount/affMap[a].emps)*100))+'%';});
+  const totPerfectPct=totEmpsAll>0?fmtNum(round2((totPerfectCount/totEmpsAll)*100))+'%':'—';
+  // G. Head Count
+  const headCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].emps>0?affMap[a].emps:'—';});
 
   // B. Payroll Inclusion — auto-read from Payroll Inclusion page (hr_records)
   const PAYROLL_REASONS=['New Hire/Transfer','Late Filing','Excluded last cut off','Timekeeper Error','Wrong Filing','Late Approval','Shift Code Concerns','System Error','Early Cutoff'];
@@ -2732,6 +2757,46 @@ async function otRenderExec(){
           ${mkRow('No. of Employees Who Are Late',lateCountVals,totLateCount>0?totLateCount:'—',totLateCount>0)}
           ${mkRow('% vs Head Count',latePctVals,totLatePct,totLateCount>0)}
           ${mkRow('Submitted DA',affs.map(()=>'—'),'—',false)}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="exec-section">
+      <div class="exec-section-title">D. Absenteeism <span class="exec-note">Based on ABSHOURS − LWPAY (Leave With Pay deducted)</span></div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('No. of Employees With Absences',absCountVals,totAbsCount>0?totAbsCount:'—',totAbsCount>0)}
+          ${mkRow('% vs Head Count',absPctVals,totAbsPct,totAbsCount>0)}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="exec-section">
+      <div class="exec-section-title">E. OT Flags <span class="exec-note">Employees with OT ≥ ${OT_ALERT_HRS} hrs in the period</span></div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('No. of Flagged Employees',otFlagCountVals,totOTFlagCount>0?totOTFlagCount:'—',totOTFlagCount>0)}
+          ${mkRow('% vs Head Count',otFlagPctVals,totOTFlagPct,totOTFlagCount>0)}
+          ${mkRow('Total Flagged OT Hours',otFlagHrsVals,totOTFlagCount>0?fmtNum(totOTFlagHours):'—',totOTFlagCount>0)}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="exec-section">
+      <div class="exec-section-title">F. Perfect Attendance <span class="exec-note">No late, no absent, no undertime</span></div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('No. of Employees (Perfect Attendance)',perfectCountVals,totPerfectCount>0?totPerfectCount:'—',totPerfectCount>0)}
+          ${mkRow('% vs Head Count',perfectPctVals,totPerfectPct,true)}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="exec-section">
+      <div class="exec-section-title">G. Head Count Summary <span class="exec-note">Total employees per affiliate for the selected period</span></div>
+      <div class="exec-table-wrap"><table class="exec-table">
+        <thead>${thRow}</thead>
+        <tbody>
+          ${mkRow('Total Employees (Period)',headCountVals,totEmpsAll>0?totEmpsAll:'—',totEmpsAll>0)}
         </tbody>
       </table></div>
     </div>`;

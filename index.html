@@ -668,19 +668,6 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
                data-placeholder="• Affiliate Y reported XX employees with OT exceeding 12 hours — review workload distribution&#10;• High tardiness rate in Department Z (XX% vs headcount)&#10;• Payroll inclusions for late approval cases pending resolution…"></div>
         </div>
 
-        <div class="exec-cmt-block cmt-blue">
-          <div class="exec-cmt-block-label">Management Recommendations</div>
-          <div class="exec-cmt-hint">Specific action items, decisions needed, or approvals required from the board.</div>
-          <div class="exec-cmt-editor" id="excmt-recommendations" contenteditable="true" spellcheck="true"
-               data-placeholder="1. Review and enforce OT policy for affiliates exceeding the 12-hour threshold&#10;2. Approve additional staffing for high-absence cost centers&#10;3. Coordinate with Department Heads on tardiness reduction plan&#10;4. Confirm payroll cut-off alignment for the next period…"></div>
-        </div>
-
-        <div class="exec-cmt-block">
-          <div class="exec-cmt-block-label">Additional Notes &amp; Disclaimers</div>
-          <div class="exec-cmt-hint">Data sources, assumptions, cut-off dates, system limitations, or any other relevant context.</div>
-          <div class="exec-cmt-editor" id="excmt-addl" contenteditable="true" spellcheck="true"
-               data-placeholder="Data sourced from SAP timekeeping system. Cut-off date: ___&#10;OT flagging threshold: &gt;12 hours per employee per period.&#10;Absent Hours reflect ABSHOURS column as filed — no LWPAY deduction applied.&#10;This report is for internal board use only."></div>
-        </div>
 
       </div>
     </div>
@@ -4050,8 +4037,6 @@ function execCmtAutoGenerate(d){
   set('excmt-summary',summary);
   set('excmt-highlights',hi.trim());
   set('excmt-concerns',con.trim());
-  set('excmt-recommendations',rec.trim());
-  set('excmt-addl',addl);
 
   const banner=document.getElementById('exec-cmt-period-text');
   if(banner)banner.textContent='Auto-generated from data'+(d.period?' — period: '+d.period:' (all periods)');

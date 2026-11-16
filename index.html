@@ -340,6 +340,53 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .cmp-stat-val{font-size:14px;font-weight:700;color:var(--text);font-family:'DM Mono',monospace;line-height:1.2}
 .cmp-mini-bars{display:flex;align-items:flex-end;gap:2px;height:40px;padding-top:4px}
 .cmp-mini-bar{flex:1;min-width:4px;border-radius:2px 2px 0 0}
+/* OT TREND SECTION */
+.trend-period-grid{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 14px}
+.trend-pcb-label{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:5px 11px;cursor:pointer;font-size:11px;font-weight:600;color:var(--text);transition:background .15s,border-color .15s}
+.trend-pcb-label:hover{background:#e8f0ff;border-color:var(--blue2)}
+.trend-pcb-label input[type=checkbox]{accent-color:var(--blue2);width:13px;height:13px;cursor:pointer}
+.trend-pcb-label.checked{background:#e8f0ff;border-color:var(--blue2);color:var(--navy)}
+.trend-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:700px){.trend-kpi-strip{grid-template-columns:repeat(2,1fr)}}
+.trend-kpi-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 15px;box-shadow:var(--shadow);border-top:3px solid var(--blue2)}
+.trend-kpi-tile.gold{border-top-color:#f59e0b}.trend-kpi-tile.green{border-top-color:#059669}.trend-kpi-tile.red{border-top-color:#d0435a}
+.trend-kpi-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:4px;font-weight:700}
+.trend-kpi-val{font-size:18px;font-weight:800;color:var(--navy);font-family:'DM Mono',monospace;line-height:1.2}
+.trend-kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.trend-chart-wrap{overflow-x:auto;margin-bottom:16px}
+.trend-data-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}
+.trend-data-table th{background:var(--navy);color:#fff;padding:6px 10px;text-align:center;font-size:10px;font-weight:700;white-space:nowrap}
+.trend-data-table th:first-child{text-align:left}
+.trend-data-table td{padding:6px 10px;border-bottom:1px solid var(--border);text-align:center;color:var(--text2)}
+.trend-data-table td:first-child{text-align:left;font-weight:600;color:var(--text);background:var(--bg)}
+.trend-data-table tr:hover td{background:rgba(20,86,160,.04)}
+/* REAL-TIME COMMENTS */
+.cmt-fab{position:fixed;bottom:24px;right:24px;z-index:9999;width:52px;height:52px;border-radius:50%;background:var(--blue2);border:none;cursor:pointer;box-shadow:0 4px 16px rgba(20,86,160,.35);display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s}
+.cmt-fab:hover{transform:scale(1.08);box-shadow:0 6px 22px rgba(20,86,160,.45)}
+.cmt-fab svg{width:22px;height:22px;fill:#fff}
+.cmt-badge{position:absolute;top:0;right:0;background:#d0435a;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid var(--white)}
+.cmt-panel{position:fixed;bottom:84px;right:24px;z-index:9998;width:340px;max-height:520px;background:var(--white);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.14);display:flex;flex-direction:column;overflow:hidden;transform:translateY(10px);opacity:0;pointer-events:none;transition:transform .18s,opacity .18s}
+.cmt-panel.open{transform:translateY(0);opacity:1;pointer-events:all}
+.cmt-panel-head{background:var(--navy);color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.cmt-panel-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cmt-panel-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px;line-height:1;padding:0 2px;opacity:.8}
+.cmt-panel-close:hover{opacity:1}
+.cmt-name-row{padding:10px 14px 0;flex-shrink:0;border-bottom:1px solid var(--border);padding-bottom:10px}
+.cmt-name-row input{width:100%;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg);box-sizing:border-box}
+.cmt-name-row input:focus{outline:2px solid var(--blue2);border-color:transparent}
+.cmt-list{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.cmt-item{display:flex;flex-direction:column;gap:3px}
+.cmt-item-head{display:flex;align-items:center;gap:8px}
+.cmt-item-author{font-size:11px;font-weight:700;color:var(--navy)}
+.cmt-item-time{font-size:10px;color:var(--text3)}
+.cmt-item-text{font-size:12px;color:var(--text);line-height:1.5;background:var(--bg);border-radius:0 8px 8px 8px;padding:7px 10px}
+.cmt-item.mine .cmt-item-text{background:#e8f0ff;border-radius:8px 0 8px 8px}
+.cmt-input-row{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.cmt-input-row textarea{flex:1;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--text);resize:none;height:52px;background:var(--bg);line-height:1.4}
+.cmt-input-row textarea:focus{outline:2px solid var(--blue2);border-color:transparent}
+.cmt-send-btn{background:var(--blue2);color:#fff;border:none;border-radius:8px;padding:0 14px;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0;transition:background .15s}
+.cmt-send-btn:hover{background:var(--navy)}
+.cmt-empty{font-size:12px;color:var(--text3);text-align:center;padding:20px 0;font-style:italic}
 /* FORMATTED OT REPORT (cut-off / department / cost center / employee layout) */
 .otr-table{width:100%;border-collapse:collapse}
 .otr-table td{border:1px solid #a7bfae;padding:6px 12px;font-size:12px;text-align:center;color:var(--text)}
@@ -529,6 +576,31 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
         <div id="cmp-chart-wrap" style="display:none">
           <div id="cmp-chart"></div>
           <div id="cmp-metrics"></div>
+        </div>
+      </div>
+
+      <!-- SECTION H: OT TREND — SINGLE AFFILIATE -->
+      <div class="exec-section" style="margin-top:20px">
+        <div class="exec-section-title">H. OT Trend — Single Affiliate View</div>
+        <div class="exec-note" style="display:block;margin:4px 0 14px">Select one affiliate, choose the periods to include, then click <b>Show Trend</b></div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Affiliate</label>
+            <select id="trend-aff" onchange="trendPopulatePeriods()" style="min-width:160px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;background:var(--white);color:var(--text)">
+              <option value="">— Select Affiliate —</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:11px" onclick="trendSelectAll(true)">Select All</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:11px" onclick="trendSelectAll(false)">Clear</button>
+            <button class="btn btn-primary" style="padding:7px 18px;font-size:12px" onclick="otRenderTrend()">Show Trend</button>
+          </div>
+        </div>
+        <div class="trend-period-grid" id="trend-period-list"><span style="font-size:12px;color:var(--text3)">Select an affiliate to load periods.</span></div>
+        <div id="trend-chart-wrap" style="display:none">
+          <div class="trend-kpi-strip" id="trend-kpis"></div>
+          <div class="trend-chart-wrap"><svg id="trend-svg" style="width:100%;min-width:420px;display:block"></svg></div>
+          <div class="trend-chart-wrap"><div id="trend-table-wrap"></div></div>
         </div>
       </div>
     </div>
@@ -1120,6 +1192,11 @@ function doLogin(){
   document.getElementById('dashboard-screen').classList.add('active');
   populateYearDropdown();renderDash();renderInclusion();
   goExecDash();
+  // Pre-fill comment author from localStorage
+  const savedAuthor=cmtGetAuthor();
+  const ainput=document.getElementById('cmt-author-input');
+  if(ainput&&savedAuthor)ainput.value=savedAuthor;
+  cmtLoad();cmtStartPolling();
   toast('Welcome!','success');
 }
 function doLogout(){
@@ -1144,6 +1221,7 @@ function execLoadAndRender(){
       if(cur)affEl.value=cur;
     }
     otPopulatePeriodDropdowns();
+    trendPopulateAffDropdown();
     otRenderExec();
   });
 }
@@ -2071,6 +2149,7 @@ function otInitPage(){
     });
     otPopulatePeriodDropdowns();
     otPopulateUploadPeriods();
+    trendPopulateAffDropdown();
     const anyActive=OT_SUBS.some(s=>document.getElementById('ot-sub-'+s).style.display==='block');
     if(!anyActive)otShowSub('upload');
   });
@@ -3544,6 +3623,279 @@ async function otExportExcel(){
   toast('OT report exported ✓','success');
 }
 // ── END OVERTIME MONITORING MODULE ────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════
+// ── OT TREND (SECTION H) ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+function trendPopulateAffDropdown(){
+  const sel=document.getElementById('trend-aff');
+  if(!sel)return;
+  const affs=[...new Set(otLoad().map(i=>i.affiliate).filter(Boolean))].sort();
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Select Affiliate —</option>'+affs.map(a=>`<option value="${a}"${a===cur?' selected':''}>${a}</option>`).join('');
+}
+function trendPopulatePeriods(){
+  const aff=document.getElementById('trend-aff').value;
+  const container=document.getElementById('trend-period-list');
+  document.getElementById('trend-chart-wrap').style.display='none';
+  if(!aff){container.innerHTML='<span style="font-size:12px;color:var(--text3)">Select an affiliate to load periods.</span>';return;}
+  const imports=otLoad().filter(i=>i.affiliate===aff);
+  const periods=[...new Set(imports.map(i=>i.periodLabel))].sort((a,b)=>{
+    const da=new Date(imports.find(i=>i.periodLabel===a)?.periodStart||0);
+    const db=new Date(imports.find(i=>i.periodLabel===b)?.periodStart||0);
+    return da-db;
+  });
+  if(!periods.length){container.innerHTML='<span style="font-size:12px;color:var(--text3)">No uploaded periods for '+aff+'.</span>';return;}
+  container.innerHTML=periods.map(p=>`
+    <label class="trend-pcb-label" id="trend-pcb-wrap-${btoa(p).replace(/=/g,'')}">
+      <input type="checkbox" class="trend-pcb" value="${p}" checked onchange="this.closest('label').classList.toggle('checked',this.checked)">
+      ${p}
+    </label>`).join('');
+  container.querySelectorAll('.trend-pcb-label').forEach(l=>l.classList.add('checked'));
+}
+function trendSelectAll(val){
+  document.querySelectorAll('.trend-pcb').forEach(cb=>{
+    cb.checked=val;
+    cb.closest('label').classList.toggle('checked',val);
+  });
+}
+function otRenderTrend(){
+  const aff=document.getElementById('trend-aff').value;
+  const wrap=document.getElementById('trend-chart-wrap');
+  if(!aff){toast('Select an affiliate first.','error');return;}
+  const selPeriods=[...document.querySelectorAll('.trend-pcb:checked')].map(cb=>cb.value);
+  if(!selPeriods.length){wrap.style.display='none';toast('Select at least one period.','error');return;}
+
+  const allImports=otLoad().filter(i=>i.affiliate===aff&&selPeriods.includes(i.periodLabel));
+  const periodStartMap={};
+  otLoad().forEach(i=>{if(i.periodStart&&!periodStartMap[i.periodLabel])periodStartMap[i.periodLabel]=i.periodStart;});
+  const periods=selPeriods.sort((a,b)=>{
+    const da=periodStartMap[a]?new Date(periodStartMap[a]):new Date(0);
+    const db=periodStartMap[b]?new Date(periodStartMap[b]):new Date(0);
+    return da-db;
+  });
+  const shortL=p=>p.length>14?p.slice(0,13)+'…':p;
+
+  // Build per-period aggregates
+  const pData=periods.map(p=>{
+    const imps=allImports.filter(i=>i.periodLabel===p);
+    const emps=otFlatEmployees(imps,'','','');
+    if(!emps.length)return{p,ot:0,reg:0,total:0,abs:0,late:0,otPct:0,empCount:0};
+    const ot=round2(emps.reduce((s,e)=>s+e.overtimeHours,0));
+    const reg=round2(emps.reduce((s,e)=>s+e.regularHours,0));
+    const total=round2(emps.reduce((s,e)=>s+e.totalHours,0));
+    const abs=round2(emps.reduce((s,e)=>s+e.absentHours,0));
+    const late=round2(emps.reduce((s,e)=>s+e.lateHours,0));
+    const otFlagged=emps.filter(e=>e.overtimeHours>OT_ALERT_HRS).length;
+    return{p,ot,reg,total,abs,late,otPct:total>0?round2((ot/total)*100):0,empCount:emps.length,otFlagged};
+  }).filter(d=>d.empCount>0);
+
+  if(!pData.length){wrap.style.display='none';toast('No data for selected periods.','error');return;}
+
+  // KPI tiles
+  const totOT=round2(pData.reduce((s,d)=>s+d.ot,0));
+  const avgPct=round2(pData.reduce((s,d)=>s+d.otPct,0)/pData.length);
+  const peak=pData.reduce((mx,d)=>d.otPct>mx.otPct?d:mx,pData[0]);
+  const latest=pData[pData.length-1];
+  document.getElementById('trend-kpis').innerHTML=`
+    <div class="trend-kpi-tile"><div class="trend-kpi-lbl">Total OT Hrs</div><div class="trend-kpi-val">${fmtNum(totOT)}</div><div class="trend-kpi-sub">${pData.length} period(s)</div></div>
+    <div class="trend-kpi-tile gold"><div class="trend-kpi-lbl">Avg OT Rate</div><div class="trend-kpi-val">${fmtNum(avgPct)}%</div><div class="trend-kpi-sub">across selected periods</div></div>
+    <div class="trend-kpi-tile red"><div class="trend-kpi-lbl">Peak Period</div><div class="trend-kpi-val" style="font-size:13px">${shortL(peak.p)}</div><div class="trend-kpi-sub">${fmtNum(peak.otPct)}% OT rate</div></div>
+    <div class="trend-kpi-tile green"><div class="trend-kpi-lbl">Latest Period</div><div class="trend-kpi-val" style="font-size:13px">${shortL(latest.p)}</div><div class="trend-kpi-sub">${fmtNum(latest.otPct)}%</div></div>`;
+
+  // SVG bar + line chart
+  const CW=900,CH=280,PL=58,PR=24,PT=30,PB=56;
+  const cW=CW-PL-PR,cH=CH-PT-PB;
+  const maxOT=Math.max(...pData.map(d=>d.ot),1);
+  const yBarMax=Math.ceil(maxOT/50)*50+50;
+  const maxPct=Math.max(...pData.map(d=>d.otPct),1);
+  const yPctMax=Math.ceil(maxPct/5)*5+5;
+  const bw=Math.min(40,cW/pData.length*0.55);
+  const xC=i=>PL+(i+0.5)*(cW/pData.length);
+  const yBar=v=>PT+cH-(v/yBarMax)*cH;
+  const yPct=v=>PT+cH-(v/yPctMax)*cH;
+  const BAR_CLR='#1a56a8';const LINE_CLR='#f59e0b';
+
+  let grid='',bars='',lineP='',dots='';
+  // Y-axis left (OT hrs)
+  for(let y=0;y<=yBarMax;y+=Math.ceil(yBarMax/5/10)*10){
+    const sy=yBar(y);
+    if(sy<PT-5||sy>PT+cH+5)continue;
+    grid+=`<line x1="${PL}" y1="${sy.toFixed(1)}" x2="${CW-PR}" y2="${sy.toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>`;
+    grid+=`<text x="${PL-6}" y="${(sy+4).toFixed(1)}" text-anchor="end" fill="#888" font-size="10">${y}</text>`;
+  }
+  // Y-axis right (OT %)
+  for(let p2=0;p2<=yPctMax;p2+=Math.ceil(yPctMax/5)){
+    const sy=yPct(p2);
+    if(sy<PT-5||sy>PT+cH+5)continue;
+    grid+=`<text x="${CW-PR+6}" y="${(sy+4).toFixed(1)}" text-anchor="start" fill="${LINE_CLR}" font-size="10">${p2}%</text>`;
+  }
+  // Axes
+  grid+=`<line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+cH}" stroke="#ccc" stroke-width="1"/>`;
+  grid+=`<line x1="${PL}" y1="${PT+cH}" x2="${CW-PR}" y2="${PT+cH}" stroke="#ccc" stroke-width="1"/>`;
+  grid+=`<line x1="${CW-PR}" y1="${PT}" x2="${CW-PR}" y2="${PT+cH}" stroke="${LINE_CLR}" stroke-width="1" stroke-dasharray="3,3" opacity=".5"/>`;
+  // Bars + labels
+  pData.forEach((d,i)=>{
+    const x=xC(i);
+    const bh=(d.ot/yBarMax)*cH;
+    const by=PT+cH-bh;
+    const isPeak=d.p===peak.p;
+    bars+=`<rect x="${(x-bw/2).toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh,0).toFixed(1)}" rx="3" fill="${isPeak?'#f59e0b':BAR_CLR}" opacity=".82"><title>${d.p}: ${fmtNum(d.ot)} OT hrs (${fmtNum(d.otPct)}%)</title></rect>`;
+    bars+=`<text x="${x.toFixed(1)}" y="${(by-4).toFixed(1)}" text-anchor="middle" fill="${isPeak?'#c07a00':BAR_CLR}" font-size="9" font-weight="700">${fmtNum(d.ot)}</text>`;
+    grid+=`<text x="${x.toFixed(1)}" y="${(PT+cH+16).toFixed(1)}" text-anchor="middle" fill="#888" font-size="9">${shortL(d.p)}</text>`;
+  });
+  // Line (OT %)
+  const pts=pData.map((d,i)=>({x:xC(i),y:yPct(d.otPct),pct:d.otPct,p:d.p}));
+  if(pts.length>1){
+    lineP=`<path d="${pts.map((pt,i)=>`${i===0?'M':'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ')}" stroke="${LINE_CLR}" stroke-width="2.5" fill="none"/>`;
+    pts.forEach(pt=>{dots+=`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="4" fill="${LINE_CLR}" stroke="#fff" stroke-width="1.5"><title>${pt.p}: ${fmtNum(pt.pct)}%</title></circle>`;});
+  }
+  // Legend
+  const legend=`<div style="display:flex;gap:18px;margin-top:8px;justify-content:center;font-size:11px;font-weight:600;color:var(--text2)">
+    <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:16px;height:10px;background:${BAR_CLR};border-radius:2px;opacity:.82"></span>OT Hours</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:20px;height:3px;background:${LINE_CLR};border-radius:2px"></span>OT %</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:16px;height:10px;background:#f59e0b;border-radius:2px"></span>Peak Period</span>
+  </div>`;
+  const svgEl=document.getElementById('trend-svg');
+  svgEl.setAttribute('viewBox',`0 0 ${CW} ${CH}`);
+  svgEl.innerHTML=grid+bars+lineP+dots;
+  svgEl.insertAdjacentHTML('afterend',legend.replace('<div','<div id="trend-legend"'));
+  const oldLegend=document.getElementById('trend-legend');if(oldLegend&&oldLegend.previousElementSibling?.id==='trend-svg'){}
+  // remove extra legend if re-rendering
+  document.querySelectorAll('#trend-legend').forEach((el,i)=>{if(i>0)el.remove();});
+
+  // Data table
+  document.getElementById('trend-table-wrap').innerHTML=`
+    <table class="trend-data-table">
+      <thead><tr>
+        <th style="text-align:left">Period</th>
+        <th>Employees</th>
+        <th>OT Hrs</th>
+        <th>OT %</th>
+        <th>Reg Hrs</th>
+        <th>Absent Hrs</th>
+        <th>Late Hrs</th>
+        <th>OT Flagged (>${OT_ALERT_HRS}h)</th>
+      </tr></thead>
+      <tbody>${pData.map(d=>`<tr>
+        <td>${d.p}</td>
+        <td>${d.empCount}</td>
+        <td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--navy)">${fmtNum(d.ot)}</td>
+        <td style="font-family:'DM Mono',monospace;font-weight:700;color:${d.otPct>10?'var(--red)':'var(--text)'}">${fmtNum(d.otPct)}%</td>
+        <td style="font-family:'DM Mono',monospace">${fmtNum(d.reg)}</td>
+        <td style="font-family:'DM Mono',monospace">${fmtNum(d.abs)}</td>
+        <td style="font-family:'DM Mono',monospace">${fmtNum(d.late)}</td>
+        <td style="font-weight:700;color:${d.otFlagged>0?'var(--red)':'var(--text)'}">${d.otFlagged}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+
+  wrap.style.display='block';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ── REAL-TIME COMMENTS ────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+const CMT_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/comments.json';
+let _cmtPollTimer=null;
+let _cmtLastTs=0;
+let _cmtOpen=false;
+let _cmtKnownIds=new Set();
+
+function cmtGetAuthor(){
+  try{return localStorage.getItem('cmt_author')||'';}catch(e){return '';}
+}
+function cmtSetAuthor(v){
+  try{localStorage.setItem('cmt_author',v);}catch(e){}
+}
+function cmtToggle(){
+  _cmtOpen=!_cmtOpen;
+  document.getElementById('cmt-panel').classList.toggle('open',_cmtOpen);
+  if(_cmtOpen){clearBadge();cmtLoad();}
+}
+function clearBadge(){
+  const b=document.getElementById('cmt-badge');
+  if(b){b.style.display='none';b.textContent='';}
+}
+async function cmtLoad(){
+  try{
+    const res=await fetch(CMT_FB_URL);
+    if(!res.ok)return;
+    const data=await res.json();
+    if(!data)return renderCmtList([]);
+    const list=Array.isArray(data)?data:Object.values(data);
+    list.sort((a,b)=>(a.ts||0)-(b.ts||0));
+    renderCmtList(list);
+    // badge for new items when panel is closed
+    const newOnes=list.filter(c=>!_cmtKnownIds.has(c.id));
+    newOnes.forEach(c=>_cmtKnownIds.add(c.id));
+    if(!_cmtOpen&&newOnes.length){
+      const b=document.getElementById('cmt-badge');
+      if(b){b.textContent=newOnes.length>9?'9+':newOnes.length;b.style.display='flex';}
+    }
+  }catch(e){console.warn('Comments load failed',e);}
+}
+function renderCmtList(list){
+  const me=cmtGetAuthor().trim().toLowerCase();
+  const el=document.getElementById('cmt-list');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="cmt-empty">No comments yet. Be the first!</div>';return;}
+  el.innerHTML=list.map(c=>{
+    const isMine=c.author&&c.author.trim().toLowerCase()===me;
+    const timeStr=c.ts?new Date(c.ts).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return`<div class="cmt-item${isMine?' mine':''}">
+      <div class="cmt-item-head">
+        <span class="cmt-item-author">${escHtml(c.author||'Anonymous')}</span>
+        <span class="cmt-item-time">${timeStr}</span>
+      </div>
+      <div class="cmt-item-text">${escHtml(c.text||'')}</div>
+    </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+async function cmtPost(){
+  const textarea=document.getElementById('cmt-input');
+  const text=(textarea?.value||'').trim();
+  if(!text)return;
+  const authorInput=document.getElementById('cmt-author-input');
+  const author=(authorInput?.value||'').trim()||'Anonymous';
+  cmtSetAuthor(author);
+  const rec={id:Date.now()+'_'+Math.random().toString(36).slice(2),author,text,ts:Date.now()};
+  try{
+    await fetch(CMT_FB_URL.replace('.json','/')+rec.id+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)});
+    _cmtKnownIds.add(rec.id);
+    if(textarea)textarea.value='';
+    cmtLoad();
+  }catch(e){toast('Could not post comment.','error');}
+}
+function cmtStartPolling(){
+  if(_cmtPollTimer)clearInterval(_cmtPollTimer);
+  _cmtPollTimer=setInterval(cmtLoad,20000);
+}
+// ── END OVERTIME MONITORING MODULE ────────────────────────────────────
 </script>
+
+<!-- COMMENTS PANEL (floating) -->
+<button class="cmt-fab" onclick="cmtToggle()" title="Comments">
+  <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+  <span class="cmt-badge" id="cmt-badge"></span>
+</button>
+<div class="cmt-panel" id="cmt-panel">
+  <div class="cmt-panel-head">
+    <div class="cmt-panel-title">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+      Team Comments
+    </div>
+    <button class="cmt-panel-close" onclick="cmtToggle()">✕</button>
+  </div>
+  <div class="cmt-name-row">
+    <input id="cmt-author-input" placeholder="Your name…" oninput="cmtSetAuthor(this.value)" />
+  </div>
+  <div class="cmt-list" id="cmt-list"><div class="cmt-empty">Loading…</div></div>
+  <div class="cmt-input-row">
+    <textarea id="cmt-input" placeholder="Write a comment…" onkeydown="if(event.ctrlKey&&event.key==='Enter')cmtPost()"></textarea>
+    <button class="cmt-send-btn" onclick="cmtPost()">Send</button>
+  </div>
+</div>
 </body>
 </html>

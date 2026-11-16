@@ -317,14 +317,7 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
 .exec-cmt-block.cmt-red .exec-cmt-editor:focus{border-color:#c0392b;box-shadow:0 0 0 3px rgba(192,57,43,.1)}
 .exec-cmt-block.cmt-blue .exec-cmt-editor{background:#f4f8fe;border-color:#b8d0f0}
 .exec-cmt-block.cmt-blue .exec-cmt-editor:focus{border-color:#1456a0;box-shadow:0 0 0 3px rgba(20,86,160,.12)}
-.exec-cmt-sig-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px;padding-top:16px;border-top:1.5px solid var(--border)}
-.exec-cmt-sig-block{display:flex;flex-direction:column;align-items:center;gap:6px}
-.exec-cmt-sig-line{width:100%;height:1.5px;background:var(--navy);margin-bottom:4px}
-.exec-cmt-sig-label{font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px}
-.exec-cmt-sig-input{width:100%;border:none;border-bottom:1.5px dashed var(--border);background:transparent;text-align:center;font-size:12px;color:var(--text);outline:none;padding:4px 0;font-family:inherit}
-.exec-cmt-sig-input:focus{border-bottom-color:#1456a0}
-.exec-cmt-meta{font-size:10.5px;color:var(--text3);text-align:right;margin-top:10px;font-style:italic}
-@media(max-width:600px){.exec-cmt-sig-row{grid-template-columns:1fr}.exec-cmt-title-row{flex-direction:column;align-items:flex-start}}
+@media(max-width:600px){.exec-cmt-title-row{flex-direction:column;align-items:flex-start}}
 /* TK MONITORING */
 .tk-excl-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
 .tk-form-lbl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:4px}
@@ -689,25 +682,6 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
                data-placeholder="Data sourced from SAP timekeeping system. Cut-off date: ___&#10;OT flagging threshold: &gt;12 hours per employee per period.&#10;Absent Hours reflect ABSHOURS column as filed — no LWPAY deduction applied.&#10;This report is for internal board use only."></div>
         </div>
 
-        <div class="exec-cmt-sig-row">
-          <div class="exec-cmt-sig-block">
-            <div class="exec-cmt-sig-line"></div>
-            <div class="exec-cmt-sig-label">Prepared by</div>
-            <input class="exec-cmt-sig-input" id="excmt-sig-prepared" placeholder="Name / Position">
-          </div>
-          <div class="exec-cmt-sig-block">
-            <div class="exec-cmt-sig-line"></div>
-            <div class="exec-cmt-sig-label">Noted by</div>
-            <input class="exec-cmt-sig-input" id="excmt-sig-noted" placeholder="Name / Position">
-          </div>
-          <div class="exec-cmt-sig-block">
-            <div class="exec-cmt-sig-line"></div>
-            <div class="exec-cmt-sig-label">Approved by</div>
-            <input class="exec-cmt-sig-input" id="excmt-sig-approved" placeholder="Name / Position">
-          </div>
-        </div>
-
-        <div class="exec-cmt-meta" id="exec-cmt-meta"></div>
       </div>
     </div>
 
@@ -4083,8 +4057,6 @@ function execCmtAutoGenerate(d){
   if(banner)banner.textContent='Auto-generated from data'+(d.period?' — period: '+d.period:' (all periods)');
   const s=document.getElementById('exec-cmt-sync');
   if(s){s.textContent='Auto-generated ✓';s.style.color='#1a7a4a';setTimeout(()=>{if(s)s.textContent='';},3500);}
-  const meta=document.getElementById('exec-cmt-meta');
-  if(meta){const now=new Date();meta.textContent='Generated: '+now.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
 }
 
 // ── END OVERTIME MONITORING MODULE ────────────────────────────────────

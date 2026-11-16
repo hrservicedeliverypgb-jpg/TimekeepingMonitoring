@@ -641,11 +641,14 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
       <!-- SECTION I: EXECUTIVE COMMENTARY -->
       <div class="exec-cmt-section">
         <div class="exec-cmt-title-row">
-          <div class="exec-cmt-title">I. Executive Commentary &amp; Board Notes</div>
+          <div>
+            <div class="exec-cmt-title">I. Executive Commentary &amp; Board Notes</div>
+            <div style="font-size:10.5px;color:var(--text3);margin-top:2px;font-style:italic">Auto-generated from dashboard data — editable before saving</div>
+          </div>
           <div class="exec-cmt-title-actions">
             <span class="exec-cmt-sync" id="exec-cmt-sync"></span>
             <button class="btn btn-secondary" style="padding:5px 14px;font-size:11px" onclick="execCmtSave()">
-              <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>Save
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>Save Commentary
             </button>
           </div>
         </div>
@@ -2790,7 +2793,6 @@ async function otRenderExec(){
   }catch(e){/* offline — use cached localStorage */}
   const aff=document.getElementById('ot-exec-aff').value;
   const period=document.getElementById('ot-exec-period').value;
-  execCmtLoad(period);
   // All imports (no period filter) → determines which affiliates show as columns
   const allImports=otGetFiltered(aff,'');
   const el=document.getElementById('ot-exec-content');
@@ -2980,6 +2982,8 @@ async function otRenderExec(){
         </tbody>
       </table></div>
     </div>`;
+
+  execCmtAutoGenerate({period,affs,affMap,totEmpsAll,totReg,totOT,totOTAllHours,totOTFlagCount,totOTFlagHours,totLateCount,totAbs,totTardy,totPerfectCount,payGrandTot});
 
   // Populate affiliate checkboxes for comparison section
   const cmpList=document.getElementById('cmp-aff-list');
@@ -3972,6 +3976,125 @@ function cmtStartPolling(){
 let _excmtTimer=null,_excmtCurrentKey=null,_excmtPollTimer=null;
 const EXCMT_FIELDS=['summary','highlights','concerns','recommendations','addl'];
 const EXCMT_SIGS=['prepared','noted','approved'];
+
+function execCmtAutoGenerate(d){
+  const p=d.period||'All Periods';
+  const withData=d.affs.filter(a=>d.affMap[a].hasPeriod);
+  const r2=v=>Math.round(v*100)/100;
+  const pct=(n,dn)=>dn>0?r2((n/dn)*100):0;
+  const f2=v=>v.toFixed(2);
+  const fN=v=>fmtNum(v);
+
+  // Derived totals
+  const totAbsCount=withData.reduce((s,a)=>s+d.affMap[a].absCount,0);
+  const totOTFlagPct=pct(d.totOTFlagCount,d.totEmpsAll);
+  const totLatePct=pct(d.totLateCount,d.totEmpsAll);
+  const totPerfectPct=pct(d.totPerfectCount,d.totEmpsAll);
+
+  // Find standout affiliates
+  const best=(key,fn)=>withData.length?withData.reduce((b,a)=>fn(d.affMap[a])>fn(d.affMap[b])?a:b,withData[0]):null;
+  const bestPerfectAff=best('perf',m=>m.emps>0?m.perfectCount/m.emps:0);
+  const worstOTAff=best('ot',m=>m.emps>0?m.otFlagCount/m.emps:0);
+  const worstTardyAff=best('tardy',m=>m.emps>0?m.lateCount/m.emps:0);
+  const worstAbsAff=best('abs',m=>m.absCount);
+  const otFlagFreeAffs=withData.filter(a=>d.affMap[a].otFlagCount===0);
+
+  // ── EXECUTIVE SUMMARY ─────────────────────────────────────────────
+  let summary=`For the period <b>${p}</b>, this Timekeeping Monitoring Report covers <b>${d.totEmpsAll.toLocaleString()}</b> employee${d.totEmpsAll!==1?'s':''} across <b>${withData.length}</b> affiliate${withData.length!==1?'s':''} (${d.affs.join(', ')}).<br><br>`;
+  summary+=`<b>Key Metrics at a Glance:</b><br>`;
+  summary+=`&nbsp;&nbsp;• Total Regular Hours Logged: <b>${fN(d.totReg)} hrs</b><br>`;
+  summary+=`&nbsp;&nbsp;• Total OT Hours: <b>${fN(d.totOTAllHours)} hrs</b> — ${d.totOTFlagCount} employee${d.totOTFlagCount!==1?'s':''} (${f2(totOTFlagPct)}%) exceeded the ${OT_ALERT_HRS}-hour threshold<br>`;
+  summary+=`&nbsp;&nbsp;• Total Tardy Hours: <b>${f2(d.totTardy)} hrs</b> — ${d.totLateCount} employee${d.totLateCount!==1?'s':''} (${f2(totLatePct)}%) with tardiness recorded<br>`;
+  summary+=`&nbsp;&nbsp;• Total Absent Hours: <b>${f2(d.totAbs)} hrs</b> — ${totAbsCount} employee${totAbsCount!==1?'s':''} with absence entries<br>`;
+  summary+=`&nbsp;&nbsp;• Perfect Attendance: <b>${d.totPerfectCount} employees</b> (${f2(totPerfectPct)}% of headcount) — no tardiness, absence, or undertime<br>`;
+  summary+=`&nbsp;&nbsp;• Payroll Inclusion Records: <b>${d.payGrandTot}</b> record${d.payGrandTot!==1?'s':''} filed for this period`;
+
+  // ── KEY HIGHLIGHTS ─────────────────────────────────────────────────
+  let hi='';
+  if(d.totPerfectCount>0){
+    hi+=`• <b>${d.totPerfectCount} employee${d.totPerfectCount!==1?'s':''} (${f2(totPerfectPct)}%)</b> achieved perfect attendance — no tardiness, absent hours, or undertime for the entire period.<br>`;
+  }
+  if(bestPerfectAff&&d.affMap[bestPerfectAff].emps>0){
+    const bp=pct(d.affMap[bestPerfectAff].perfectCount,d.affMap[bestPerfectAff].emps);
+    hi+=`• <b>${bestPerfectAff}</b> posted the highest perfect attendance rate at <b>${f2(bp)}%</b> (${d.affMap[bestPerfectAff].perfectCount} of ${d.affMap[bestPerfectAff].emps} employees).<br>`;
+  }
+  if(otFlagFreeAffs.length){
+    hi+=`• <b>${otFlagFreeAffs.join(', ')}</b> reported <b>zero employees</b> with OT exceeding the ${OT_ALERT_HRS}-hour threshold — full compliance with OT policy.<br>`;
+  }
+  hi+=`• Total regular hours logged across all affiliates: <b>${fN(d.totReg)} hrs</b> for the period.<br>`;
+  if(d.payGrandTot===0){hi+=`• No payroll inclusion records were filed for this period — timekeeping was processed within the standard cut-off.<br>`;}
+  if(!hi)hi='• No specific highlights identified for this period.';
+
+  // ── AREAS OF CONCERN ────────────────────────────────────────────────
+  let con='';
+  if(d.totOTFlagCount>0){
+    con+=`• <b>${d.totOTFlagCount} employee${d.totOTFlagCount!==1?'s':''} (${f2(totOTFlagPct)}% of headcount)</b> exceeded the ${OT_ALERT_HRS}-hour OT threshold.`;
+    if(worstOTAff&&d.affMap[worstOTAff].otFlagCount>0){
+      const wp=pct(d.affMap[worstOTAff].otFlagCount,d.affMap[worstOTAff].emps);
+      con+=` Highest concentration: <b>${worstOTAff}</b> with ${d.affMap[worstOTAff].otFlagCount} flagged employee${d.affMap[worstOTAff].otFlagCount!==1?'s':''} (${f2(wp)}% of its headcount).`;
+    }
+    con+='<br>';
+  }
+  if(d.totLateCount>0){
+    con+=`• <b>${d.totLateCount} employee${d.totLateCount!==1?'s':''} (${f2(totLatePct)}%)</b> incurred tardiness totalling <b>${f2(d.totTardy)} hrs</b>.`;
+    if(worstTardyAff&&d.affMap[worstTardyAff].lateCount>0){
+      const wp=pct(d.affMap[worstTardyAff].lateCount,d.affMap[worstTardyAff].emps);
+      con+=` Highest rate: <b>${worstTardyAff}</b> — ${d.affMap[worstTardyAff].lateCount} employees (${f2(wp)}%).`;
+    }
+    con+='<br>';
+  }
+  if(totAbsCount>0){
+    con+=`• <b>${totAbsCount} employee${totAbsCount!==1?'s':''}</b> recorded absent hours totalling <b>${f2(d.totAbs)} hrs</b>.`;
+    if(worstAbsAff&&d.affMap[worstAbsAff].absCount>0){
+      con+=` Most absences: <b>${worstAbsAff}</b> — ${d.affMap[worstAbsAff].absCount} employees (${f2(d.affMap[worstAbsAff].abs)} hrs).`;
+    }
+    con+='<br>';
+  }
+  if(d.payGrandTot>0){
+    con+=`• <b>${d.payGrandTot} payroll inclusion record${d.payGrandTot!==1?'s':''}</b> were filed for this period — verify full resolution before payroll close.<br>`;
+  }
+  if(!con)con='• No major concerns identified for this period. All key metrics are within acceptable thresholds.';
+
+  // ── MANAGEMENT RECOMMENDATIONS ─────────────────────────────────────
+  let rec='';let n=1;
+  if(d.totOTFlagCount>0&&worstOTAff){
+    rec+=`${n++}. <b>OT Management — ${worstOTAff} and flagged affiliates:</b> Review scheduling and workload distribution for employees exceeding the ${OT_ALERT_HRS}-hour OT limit. Require prior management approval for OT beyond this threshold. Consider cross-training or augmentation where OT is structural.<br><br>`;
+  }
+  if(d.totLateCount>0&&worstTardyAff){
+    rec+=`${n++}. <b>Tardiness Reduction — ${worstTardyAff}:</b> Engage Department Heads to investigate root causes of repeated tardiness. Implement a progressive attendance discipline program and report results to HR leadership within 15 days.<br><br>`;
+  }
+  if(totAbsCount>0&&worstAbsAff){
+    rec+=`${n++}. <b>Absence Monitoring — ${worstAbsAff}:</b> Conduct a review of employees with significant absent hours. Ensure all absences are supported by documentation (SL/VL approvals, medical certificates) and reflected accurately in payroll deductions.<br><br>`;
+  }
+  if(d.payGrandTot>0){
+    rec+=`${n++}. <b>Payroll Inclusion Resolution:</b> Expedite resolution of the ${d.payGrandTot} pending payroll inclusion record${d.payGrandTot!==1?'s':''}. Prioritize "Late Approval" and "Excluded last cut off" cases to prevent cascading payroll adjustments in the next cycle.<br><br>`;
+  }
+  rec+=`${n++}. <b>Continuing Controls:</b> Maintain monthly monitoring of OT, tardiness, and absence trends per affiliate. Escalate affiliates with consecutive periods of elevated metrics to the HR Vice President for intervention.`;
+
+  // ── ADDITIONAL NOTES ────────────────────────────────────────────────
+  const addl=`<b>Data Source:</b> HR Timekeeping Monitoring System — timesheets uploaded per cut-off period.<br>`+
+    `<b>Cut-off Period:</b> ${p}<br>`+
+    `<b>OT Flag Threshold:</b> More than ${OT_ALERT_HRS} hours of overtime per employee per period.<br>`+
+    `<b>Absent Hours Basis:</b> ABSHOURS column as filed in the timesheet — no LWPAY deduction applied.<br>`+
+    `<b>Headcount Basis:</b> Employees with active timekeeping records for the selected period only.<br>`+
+    `<b>Affiliates Covered:</b> ${d.affs.join(', ')}.<br>`+
+    `<b>Confidentiality:</b> This report is prepared for internal board use only. Distribution outside the organization requires prior authorization from the HR Head.`;
+
+  // Write to DOM
+  const set=(id,html)=>{const el=document.getElementById(id);if(el)el.innerHTML=html;};
+  set('excmt-summary',summary);
+  set('excmt-highlights',hi.trim());
+  set('excmt-concerns',con.trim());
+  set('excmt-recommendations',rec.trim());
+  set('excmt-addl',addl);
+
+  const banner=document.getElementById('exec-cmt-period-text');
+  if(banner)banner.textContent='Auto-generated from data'+(d.period?' — period: '+d.period:' (all periods)');
+  const s=document.getElementById('exec-cmt-sync');
+  if(s){s.textContent='Auto-generated ✓';s.style.color='#1a7a4a';setTimeout(()=>{if(s)s.textContent='';},3500);}
+  const meta=document.getElementById('exec-cmt-meta');
+  if(meta){const now=new Date();meta.textContent='Generated: '+now.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
+}
 
 function excmtKey(period){return(period||'__general__').replace(/[^a-zA-Z0-9_-]/g,'_').substring(0,80);}
 function excmtGetPeriod(){return(document.getElementById('ot-exec-period')||{}).value||'';}

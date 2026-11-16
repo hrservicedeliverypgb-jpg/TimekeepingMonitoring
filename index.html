@@ -2940,8 +2940,6 @@ async function otRenderExec(){
       </table></div>
     </div>`;
 
-  execCmtAutoGenerate({period,affs,affMap,totEmpsAll,totReg,totOT,totOTAllHours,totOTFlagCount,totOTFlagHours,totLateCount,totAbs,totTardy,totPerfectCount,payGrandTot});
-
   // Populate affiliate checkboxes for comparison section
   const cmpList=document.getElementById('cmp-aff-list');
   if(cmpList){
@@ -3846,6 +3844,7 @@ function otRenderTrend(){
     </table>`;
 
   wrap.style.display='block';
+  execCmtAutoGenerate({aff,pData,totOT,avgPct,peak,latest});
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -3930,107 +3929,81 @@ function cmtStartPolling(){
 }
 // ── EXECUTIVE COMMENTARY ──────────────────────────────────────────────
 function execCmtAutoGenerate(d){
-  const p=d.period||'All Periods';
-  const withData=d.affs.filter(a=>d.affMap[a].hasPeriod);
-  const r2=v=>Math.round(v*100)/100;
-  const pct=(n,dn)=>dn>0?r2((n/dn)*100):0;
-  const f2=v=>v.toFixed(2);
+  // d = { aff, pData, totOT, avgPct, peak, latest }
+  // pData[i] = { p, ot, reg, total, abs, late, otPct, empCount, otFlagged }
+  const {aff,pData,totOT,avgPct,peak,latest}=d;
   const fN=v=>fmtNum(v);
+  const f2=v=>(+v).toFixed(2);
+  const n=pData.length;
+  const first=pData[0];
 
-  // Derived totals
-  const totAbsCount=withData.reduce((s,a)=>s+d.affMap[a].absCount,0);
-  const totOTFlagPct=pct(d.totOTFlagCount,d.totEmpsAll);
-  const totLatePct=pct(d.totLateCount,d.totEmpsAll);
-  const totPerfectPct=pct(d.totPerfectCount,d.totEmpsAll);
+  // Trend direction: compare first half avg vs second half avg OT%
+  const half=Math.floor(n/2);
+  const firstHalfAvg=n>1?pData.slice(0,half||1).reduce((s,x)=>s+x.otPct,0)/(half||1):0;
+  const secondHalfAvg=n>1?pData.slice(half||1).reduce((s,x)=>s+x.otPct,0)/Math.max(n-(half||1),1):0;
+  const trendDir=n<2?'stable':secondHalfAvg>firstHalfAvg*1.05?'increasing':secondHalfAvg<firstHalfAvg*0.95?'decreasing':'stable';
+  const trendLabel=trendDir==='increasing'?'<b style="color:var(--red)">increasing ↑</b>':trendDir==='decreasing'?'<b style="color:#1a7a4a">decreasing ↓</b>':'<b>stable →</b>';
 
-  // Find standout affiliates
-  const best=(key,fn)=>withData.length?withData.reduce((b,a)=>fn(d.affMap[a])>fn(d.affMap[b])?a:b,withData[0]):null;
-  const bestPerfectAff=best('perf',m=>m.emps>0?m.perfectCount/m.emps:0);
-  const worstOTAff=best('ot',m=>m.emps>0?m.otFlagCount/m.emps:0);
-  const worstTardyAff=best('tardy',m=>m.emps>0?m.lateCount/m.emps:0);
-  const worstAbsAff=best('abs',m=>m.absCount);
-  const otFlagFreeAffs=withData.filter(a=>d.affMap[a].otFlagCount===0);
+  // Period with lowest OT (excluding 0-employee periods)
+  const lowestOT=pData.reduce((lo,x)=>x.otPct<lo.otPct?x:lo,pData[0]);
+  // Periods with no flagged employees
+  const cleanPeriods=pData.filter(x=>x.otFlagged===0);
+  // Total flagged across all periods
+  const totFlagged=pData.reduce((s,x)=>s+x.otFlagged,0);
+  // Period-over-period change (latest vs prior)
+  const prior=n>=2?pData[n-2]:null;
+  const popChange=prior?round2(latest.ot-prior.ot):0;
+  const popPct=prior&&prior.ot>0?round2((popChange/prior.ot)*100):null;
 
   // ── EXECUTIVE SUMMARY ─────────────────────────────────────────────
-  let summary=`For the period <b>${p}</b>, this Timekeeping Monitoring Report covers <b>${d.totEmpsAll.toLocaleString()}</b> employee${d.totEmpsAll!==1?'s':''} across <b>${withData.length}</b> affiliate${withData.length!==1?'s':''} (${d.affs.join(', ')}).<br><br>`;
-  summary+=`<b>Key Metrics at a Glance:</b><br>`;
-  summary+=`&nbsp;&nbsp;• Total Regular Hours Logged: <b>${fN(d.totReg)} hrs</b><br>`;
-  summary+=`&nbsp;&nbsp;• Total OT Hours: <b>${fN(d.totOTAllHours)} hrs</b> — ${d.totOTFlagCount} employee${d.totOTFlagCount!==1?'s':''} (${f2(totOTFlagPct)}%) exceeded the ${OT_ALERT_HRS}-hour threshold<br>`;
-  summary+=`&nbsp;&nbsp;• Total Tardy Hours: <b>${f2(d.totTardy)} hrs</b> — ${d.totLateCount} employee${d.totLateCount!==1?'s':''} (${f2(totLatePct)}%) with tardiness recorded<br>`;
-  summary+=`&nbsp;&nbsp;• Total Absent Hours: <b>${f2(d.totAbs)} hrs</b> — ${totAbsCount} employee${totAbsCount!==1?'s':''} with absence entries<br>`;
-  summary+=`&nbsp;&nbsp;• Perfect Attendance: <b>${d.totPerfectCount} employees</b> (${f2(totPerfectPct)}% of headcount) — no tardiness, absence, or undertime<br>`;
-  summary+=`&nbsp;&nbsp;• Payroll Inclusion Records: <b>${d.payGrandTot}</b> record${d.payGrandTot!==1?'s':''} filed for this period`;
+  let summary=`OT Trend Analysis for affiliate <b>${aff}</b> covering <b>${n} period${n!==1?'s':''}</b>`;
+  if(n>1)summary+=` (<b>${first.p}</b> to <b>${latest.p}</b>)`;
+  summary+=`.<br><br>`;
+  summary+=`<b>Summary Metrics:</b><br>`;
+  summary+=`&nbsp;&nbsp;• Total OT Hours (all periods): <b>${fN(totOT)} hrs</b><br>`;
+  summary+=`&nbsp;&nbsp;• Average OT Rate: <b>${fN(avgPct)}%</b> per period<br>`;
+  summary+=`&nbsp;&nbsp;• Peak Period: <b>${peak.p}</b> — ${fN(peak.ot)} hrs (${fN(peak.otPct)}% OT rate, ${peak.otFlagged} employee${peak.otFlagged!==1?'s':''} flagged)<br>`;
+  summary+=`&nbsp;&nbsp;• Latest Period (<b>${latest.p}</b>): ${fN(latest.ot)} hrs (${fN(latest.otPct)}% OT rate, ${latest.otFlagged} employee${latest.otFlagged!==1?'s':''} flagged)<br>`;
+  if(prior)summary+=`&nbsp;&nbsp;• Period-over-Period Change: <b>${popChange>=0?'+':''}${fN(popChange)} hrs</b>${popPct!==null?' ('+( popPct>=0?'+':'')+f2(popPct)+'%)':''} vs ${prior.p}<br>`;
+  summary+=`&nbsp;&nbsp;• OT Trend Direction: ${trendLabel} across selected periods`;
 
   // ── KEY HIGHLIGHTS ─────────────────────────────────────────────────
   let hi='';
-  if(d.totPerfectCount>0){
-    hi+=`• <b>${d.totPerfectCount} employee${d.totPerfectCount!==1?'s':''} (${f2(totPerfectPct)}%)</b> achieved perfect attendance — no tardiness, absent hours, or undertime for the entire period.<br>`;
+  if(trendDir==='decreasing'){
+    hi+=`• OT hours are on a <b>downward trend</b> for ${aff} — average OT rate improved from ${f2(firstHalfAvg)}% (earlier periods) to ${f2(secondHalfAvg)}% (recent periods).<br>`;
   }
-  if(bestPerfectAff&&d.affMap[bestPerfectAff].emps>0){
-    const bp=pct(d.affMap[bestPerfectAff].perfectCount,d.affMap[bestPerfectAff].emps);
-    hi+=`• <b>${bestPerfectAff}</b> posted the highest perfect attendance rate at <b>${f2(bp)}%</b> (${d.affMap[bestPerfectAff].perfectCount} of ${d.affMap[bestPerfectAff].emps} employees).<br>`;
+  if(cleanPeriods.length){
+    hi+=`• <b>${cleanPeriods.length} period${cleanPeriods.length!==1?'s':''}</b> (${cleanPeriods.map(x=>x.p).join(', ')}) reported <b>zero employees</b> with OT exceeding the ${OT_ALERT_HRS}-hour threshold — full compliance for those periods.<br>`;
   }
-  if(otFlagFreeAffs.length){
-    hi+=`• <b>${otFlagFreeAffs.join(', ')}</b> reported <b>zero employees</b> with OT exceeding the ${OT_ALERT_HRS}-hour threshold — full compliance with OT policy.<br>`;
+  if(lowestOT.p!==peak.p){
+    hi+=`• <b>${lowestOT.p}</b> recorded the lowest OT rate at <b>${fN(lowestOT.otPct)}%</b> (${fN(lowestOT.ot)} hrs) — a benchmark for sustainable workload management.<br>`;
   }
-  hi+=`• Total regular hours logged across all affiliates: <b>${fN(d.totReg)} hrs</b> for the period.<br>`;
-  if(d.payGrandTot===0){hi+=`• No payroll inclusion records were filed for this period — timekeeping was processed within the standard cut-off.<br>`;}
-  if(!hi)hi='• No specific highlights identified for this period.';
+  if(prior&&popChange<0){
+    hi+=`• Latest period OT dropped by <b>${fN(Math.abs(popChange))} hrs</b> (${f2(Math.abs(popPct))}%) compared to the prior period — a positive sign.<br>`;
+  }
+  hi+=`• ${aff} covered an average of <b>${f2(pData.reduce((s,x)=>s+x.empCount,0)/n)} employees per period</b> across the ${n} selected period${n!==1?'s':''}.<br>`;
+  if(!hi.trim())hi='• No specific highlights identified for the selected periods.';
 
   // ── AREAS OF CONCERN ────────────────────────────────────────────────
   let con='';
-  if(d.totOTFlagCount>0){
-    con+=`• <b>${d.totOTFlagCount} employee${d.totOTFlagCount!==1?'s':''} (${f2(totOTFlagPct)}% of headcount)</b> exceeded the ${OT_ALERT_HRS}-hour OT threshold.`;
-    if(worstOTAff&&d.affMap[worstOTAff].otFlagCount>0){
-      const wp=pct(d.affMap[worstOTAff].otFlagCount,d.affMap[worstOTAff].emps);
-      con+=` Highest concentration: <b>${worstOTAff}</b> with ${d.affMap[worstOTAff].otFlagCount} flagged employee${d.affMap[worstOTAff].otFlagCount!==1?'s':''} (${f2(wp)}% of its headcount).`;
-    }
-    con+='<br>';
+  if(trendDir==='increasing'){
+    con+=`• OT hours are on an <b>upward trend</b> for ${aff} — average rate rose from ${f2(firstHalfAvg)}% (earlier periods) to ${f2(secondHalfAvg)}% (recent periods). Immediate workload review is recommended.<br>`;
   }
-  if(d.totLateCount>0){
-    con+=`• <b>${d.totLateCount} employee${d.totLateCount!==1?'s':''} (${f2(totLatePct)}%)</b> incurred tardiness totalling <b>${f2(d.totTardy)} hrs</b>.`;
-    if(worstTardyAff&&d.affMap[worstTardyAff].lateCount>0){
-      const wp=pct(d.affMap[worstTardyAff].lateCount,d.affMap[worstTardyAff].emps);
-      con+=` Highest rate: <b>${worstTardyAff}</b> — ${d.affMap[worstTardyAff].lateCount} employees (${f2(wp)}%).`;
-    }
-    con+='<br>';
+  if(peak.otFlagged>0){
+    con+=`• <b>${peak.p}</b> was the peak period with <b>${peak.otFlagged} employee${peak.otFlagged!==1?'s':''} flagged</b> for OT exceeding ${OT_ALERT_HRS} hrs (${fN(peak.ot)} total OT hrs at ${fN(peak.otPct)}% rate).<br>`;
   }
-  if(totAbsCount>0){
-    con+=`• <b>${totAbsCount} employee${totAbsCount!==1?'s':''}</b> recorded absent hours totalling <b>${f2(d.totAbs)} hrs</b>.`;
-    if(worstAbsAff&&d.affMap[worstAbsAff].absCount>0){
-      con+=` Most absences: <b>${worstAbsAff}</b> — ${d.affMap[worstAbsAff].absCount} employees (${f2(d.affMap[worstAbsAff].abs)} hrs).`;
-    }
-    con+='<br>';
+  if(totFlagged>0){
+    con+=`• A total of <b>${totFlagged} OT flag instance${totFlagged!==1?'s':''}</b> were recorded across all ${n} period${n!==1?'s':''} — an average of ${f2(totFlagged/n)} flags per period for ${aff}.<br>`;
   }
-  if(d.payGrandTot>0){
-    con+=`• <b>${d.payGrandTot} payroll inclusion record${d.payGrandTot!==1?'s':''}</b> were filed for this period — verify full resolution before payroll close.<br>`;
+  if(prior&&popChange>0){
+    con+=`• OT hours <b>increased by ${fN(popChange)} hrs</b> (${f2(popPct)}%) in the latest period (${latest.p}) compared to ${prior.p}.<br>`;
   }
-  if(!con)con='• No major concerns identified for this period. All key metrics are within acceptable thresholds.';
-
-  // ── MANAGEMENT RECOMMENDATIONS ─────────────────────────────────────
-  let rec='';let n=1;
-  if(d.totOTFlagCount>0&&worstOTAff){
-    rec+=`${n++}. <b>OT Management — ${worstOTAff} and flagged affiliates:</b> Review scheduling and workload distribution for employees exceeding the ${OT_ALERT_HRS}-hour OT limit. Require prior management approval for OT beyond this threshold. Consider cross-training or augmentation where OT is structural.<br><br>`;
+  const highAbsPeriods=pData.filter(x=>x.abs>0);
+  if(highAbsPeriods.length){
+    const totAbs=round2(highAbsPeriods.reduce((s,x)=>s+x.abs,0));
+    con+=`• Total absent hours across all periods: <b>${fN(totAbs)} hrs</b> — ${highAbsPeriods.length} period${highAbsPeriods.length!==1?'s':''} reported absences for ${aff}.<br>`;
   }
-  if(d.totLateCount>0&&worstTardyAff){
-    rec+=`${n++}. <b>Tardiness Reduction — ${worstTardyAff}:</b> Engage Department Heads to investigate root causes of repeated tardiness. Implement a progressive attendance discipline program and report results to HR leadership within 15 days.<br><br>`;
-  }
-  if(totAbsCount>0&&worstAbsAff){
-    rec+=`${n++}. <b>Absence Monitoring — ${worstAbsAff}:</b> Conduct a review of employees with significant absent hours. Ensure all absences are supported by documentation (SL/VL approvals, medical certificates) and reflected accurately in payroll deductions.<br><br>`;
-  }
-  if(d.payGrandTot>0){
-    rec+=`${n++}. <b>Payroll Inclusion Resolution:</b> Expedite resolution of the ${d.payGrandTot} pending payroll inclusion record${d.payGrandTot!==1?'s':''}. Prioritize "Late Approval" and "Excluded last cut off" cases to prevent cascading payroll adjustments in the next cycle.<br><br>`;
-  }
-  rec+=`${n++}. <b>Continuing Controls:</b> Maintain monthly monitoring of OT, tardiness, and absence trends per affiliate. Escalate affiliates with consecutive periods of elevated metrics to the HR Vice President for intervention.`;
-
-  // ── ADDITIONAL NOTES ────────────────────────────────────────────────
-  const addl=`<b>Data Source:</b> HR Timekeeping Monitoring System — timesheets uploaded per cut-off period.<br>`+
-    `<b>Cut-off Period:</b> ${p}<br>`+
-    `<b>OT Flag Threshold:</b> More than ${OT_ALERT_HRS} hours of overtime per employee per period.<br>`+
-    `<b>Absent Hours Basis:</b> ABSHOURS column as filed in the timesheet — no LWPAY deduction applied.<br>`+
-    `<b>Headcount Basis:</b> Employees with active timekeeping records for the selected period only.<br>`+
-    `<b>Affiliates Covered:</b> ${d.affs.join(', ')}.<br>`+
-    `<b>Confidentiality:</b> This report is prepared for internal board use only. Distribution outside the organization requires prior authorization from the HR Head.`;
+  if(!con.trim())con='• No major OT concerns identified for the selected periods. All metrics are within acceptable thresholds.';
 
   // Write to DOM
   const set=(id,html)=>{const el=document.getElementById(id);if(el)el.innerHTML=html;};
@@ -4039,9 +4012,9 @@ function execCmtAutoGenerate(d){
   set('excmt-concerns',con.trim());
 
   const banner=document.getElementById('exec-cmt-period-text');
-  if(banner)banner.textContent='Auto-generated from data'+(d.period?' — period: '+d.period:' (all periods)');
+  if(banner)banner.textContent=`OT Trend — ${aff} · ${n} period${n!==1?'s':''} selected · Auto-generated`;
   const s=document.getElementById('exec-cmt-sync');
-  if(s){s.textContent='Auto-generated ✓';s.style.color='#1a7a4a';setTimeout(()=>{if(s)s.textContent='';},3500);}
+  if(s){s.textContent='Updated ✓';s.style.color='#1a7a4a';setTimeout(()=>{if(s)s.textContent='';},3000);}
 }
 
 // ── END OVERTIME MONITORING MODULE ────────────────────────────────────

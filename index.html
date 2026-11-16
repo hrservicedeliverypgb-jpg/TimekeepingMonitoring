@@ -647,9 +647,6 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           </div>
           <div class="exec-cmt-title-actions">
             <span class="exec-cmt-sync" id="exec-cmt-sync"></span>
-            <button class="btn btn-secondary" style="padding:5px 14px;font-size:11px" onclick="execCmtSave()">
-              <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>Save Commentary
-            </button>
           </div>
         </div>
         <div class="exec-cmt-period-banner" id="exec-cmt-period-banner">
@@ -661,52 +658,52 @@ tbody tr:hover td{background:rgba(59,130,246,.03)}
           <div class="exec-cmt-block-label">Executive Summary</div>
           <div class="exec-cmt-hint">Brief narrative overview of overall timekeeping performance for this period.</div>
           <div class="exec-cmt-editor" id="excmt-summary" contenteditable="true" spellcheck="true"
-               oninput="execCmtDirty()" data-placeholder="Enter a concise executive summary of this period's timekeeping performance…"></div>
+               data-placeholder="Enter a concise executive summary of this period's timekeeping performance…"></div>
         </div>
 
         <div class="exec-cmt-block cmt-green">
           <div class="exec-cmt-block-label">Key Highlights</div>
           <div class="exec-cmt-hint">Positive performance metrics, achievements, and commendable results worth noting to the board.</div>
           <div class="exec-cmt-editor" id="excmt-highlights" contenteditable="true" spellcheck="true"
-               oninput="execCmtDirty()" data-placeholder="• Affiliate X achieved the highest perfect attendance rate at XX%&#10;• Total OT hours decreased by XX% vs prior period&#10;• Payroll inclusions resolved on time…"></div>
+               data-placeholder="• Affiliate X achieved the highest perfect attendance rate at XX%&#10;• Total OT hours decreased by XX% vs prior period&#10;• Payroll inclusions resolved on time…"></div>
         </div>
 
         <div class="exec-cmt-block cmt-red">
           <div class="exec-cmt-block-label">Areas of Concern</div>
           <div class="exec-cmt-hint">Issues, anomalies, or metrics that require management attention and board awareness.</div>
           <div class="exec-cmt-editor" id="excmt-concerns" contenteditable="true" spellcheck="true"
-               oninput="execCmtDirty()" data-placeholder="• Affiliate Y reported XX employees with OT exceeding 12 hours — review workload distribution&#10;• High tardiness rate in Department Z (XX% vs headcount)&#10;• Payroll inclusions for late approval cases pending resolution…"></div>
+               data-placeholder="• Affiliate Y reported XX employees with OT exceeding 12 hours — review workload distribution&#10;• High tardiness rate in Department Z (XX% vs headcount)&#10;• Payroll inclusions for late approval cases pending resolution…"></div>
         </div>
 
         <div class="exec-cmt-block cmt-blue">
           <div class="exec-cmt-block-label">Management Recommendations</div>
           <div class="exec-cmt-hint">Specific action items, decisions needed, or approvals required from the board.</div>
           <div class="exec-cmt-editor" id="excmt-recommendations" contenteditable="true" spellcheck="true"
-               oninput="execCmtDirty()" data-placeholder="1. Review and enforce OT policy for affiliates exceeding the 12-hour threshold&#10;2. Approve additional staffing for high-absence cost centers&#10;3. Coordinate with Department Heads on tardiness reduction plan&#10;4. Confirm payroll cut-off alignment for the next period…"></div>
+               data-placeholder="1. Review and enforce OT policy for affiliates exceeding the 12-hour threshold&#10;2. Approve additional staffing for high-absence cost centers&#10;3. Coordinate with Department Heads on tardiness reduction plan&#10;4. Confirm payroll cut-off alignment for the next period…"></div>
         </div>
 
         <div class="exec-cmt-block">
           <div class="exec-cmt-block-label">Additional Notes &amp; Disclaimers</div>
           <div class="exec-cmt-hint">Data sources, assumptions, cut-off dates, system limitations, or any other relevant context.</div>
           <div class="exec-cmt-editor" id="excmt-addl" contenteditable="true" spellcheck="true"
-               oninput="execCmtDirty()" data-placeholder="Data sourced from SAP timekeeping system. Cut-off date: ___&#10;OT flagging threshold: &gt;12 hours per employee per period.&#10;Absent Hours reflect ABSHOURS column as filed — no LWPAY deduction applied.&#10;This report is for internal board use only."></div>
+               data-placeholder="Data sourced from SAP timekeeping system. Cut-off date: ___&#10;OT flagging threshold: &gt;12 hours per employee per period.&#10;Absent Hours reflect ABSHOURS column as filed — no LWPAY deduction applied.&#10;This report is for internal board use only."></div>
         </div>
 
         <div class="exec-cmt-sig-row">
           <div class="exec-cmt-sig-block">
             <div class="exec-cmt-sig-line"></div>
             <div class="exec-cmt-sig-label">Prepared by</div>
-            <input class="exec-cmt-sig-input" id="excmt-sig-prepared" placeholder="Name / Position" oninput="execCmtDirty()">
+            <input class="exec-cmt-sig-input" id="excmt-sig-prepared" placeholder="Name / Position">
           </div>
           <div class="exec-cmt-sig-block">
             <div class="exec-cmt-sig-line"></div>
             <div class="exec-cmt-sig-label">Noted by</div>
-            <input class="exec-cmt-sig-input" id="excmt-sig-noted" placeholder="Name / Position" oninput="execCmtDirty()">
+            <input class="exec-cmt-sig-input" id="excmt-sig-noted" placeholder="Name / Position">
           </div>
           <div class="exec-cmt-sig-block">
             <div class="exec-cmt-sig-line"></div>
             <div class="exec-cmt-sig-label">Approved by</div>
-            <input class="exec-cmt-sig-input" id="excmt-sig-approved" placeholder="Name / Position" oninput="execCmtDirty()">
+            <input class="exec-cmt-sig-input" id="excmt-sig-approved" placeholder="Name / Position">
           </div>
         </div>
 
@@ -1332,7 +1329,6 @@ function execLoadAndRender(){
     otPopulatePeriodDropdowns();
     trendPopulateAffDropdown();
     otRenderExec();
-    execCmtLoad();execCmtStartPolling();
   });
 }
 
@@ -3895,7 +3891,6 @@ function otRenderTrend(){
 // ── REAL-TIME COMMENTS ────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════
 const CMT_FB_URL='https://carltress-8263a-default-rtdb.firebaseio.com/comments.json';
-const EXCMT_FB_BASE='https://carltress-8263a-default-rtdb.firebaseio.com/exec_commentary';
 let _cmtPollTimer=null;
 let _cmtLastTs=0;
 let _cmtOpen=false;
@@ -3973,10 +3968,6 @@ function cmtStartPolling(){
   _cmtPollTimer=setInterval(cmtLoad,20000);
 }
 // ── EXECUTIVE COMMENTARY ──────────────────────────────────────────────
-let _excmtTimer=null,_excmtCurrentKey=null,_excmtPollTimer=null;
-const EXCMT_FIELDS=['summary','highlights','concerns','recommendations','addl'];
-const EXCMT_SIGS=['prepared','noted','approved'];
-
 function execCmtAutoGenerate(d){
   const p=d.period||'All Periods';
   const withData=d.affs.filter(a=>d.affMap[a].hasPeriod);
@@ -4096,66 +4087,6 @@ function execCmtAutoGenerate(d){
   if(meta){const now=new Date();meta.textContent='Generated: '+now.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
 }
 
-function excmtKey(period){return(period||'__general__').replace(/[^a-zA-Z0-9_-]/g,'_').substring(0,80);}
-function excmtGetPeriod(){return(document.getElementById('ot-exec-period')||{}).value||'';}
-
-function execCmtLoad(period){
-  const p=period!==undefined?period:excmtGetPeriod();
-  const key=excmtKey(p);
-  _excmtCurrentKey=key;
-  const banner=document.getElementById('exec-cmt-period-text');
-  if(banner)banner.textContent=p?'Commentary for period: '+p:'No period selected — commentary applies globally.';
-  fetch(EXCMT_FB_BASE+'/'+key+'.json')
-    .then(r=>r.json()).then(data=>{
-      if(!data)return;
-      EXCMT_FIELDS.forEach(f=>{
-        const el=document.getElementById('excmt-'+f);
-        if(el&&data[f]!==undefined)el.innerHTML=data[f];
-      });
-      EXCMT_SIGS.forEach(s=>{
-        const el=document.getElementById('excmt-sig-'+s);
-        if(el&&data['sig_'+s]!==undefined)el.value=data['sig_'+s];
-      });
-      const meta=document.getElementById('exec-cmt-meta');
-      if(meta&&data._savedAt){
-        const d=new Date(data._savedAt);
-        meta.textContent='Last saved: '+d.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})+(data._savedBy?' · by '+data._savedBy:'');
-      }
-    }).catch(()=>{});
-}
-
-function execCmtDirty(){
-  const s=document.getElementById('exec-cmt-sync');
-  if(s){s.textContent='Unsaved changes…';s.style.color='#c0392b';}
-  clearTimeout(_excmtTimer);
-  _excmtTimer=setTimeout(execCmtSave,2500);
-}
-
-function execCmtSave(){
-  clearTimeout(_excmtTimer);
-  const key=_excmtCurrentKey||excmtKey(excmtGetPeriod());
-  const data={_savedAt:new Date().toISOString(),_savedBy:(document.getElementById('cmt-author-input')||{}).value||'anonymous'};
-  EXCMT_FIELDS.forEach(f=>{data[f]=(document.getElementById('excmt-'+f)||{}).innerHTML||'';});
-  EXCMT_SIGS.forEach(s=>{data['sig_'+s]=(document.getElementById('excmt-sig-'+s)||{}).value||'';});
-  const s=document.getElementById('exec-cmt-sync');
-  if(s){s.textContent='Saving…';s.style.color='var(--text3)';}
-  fetch(EXCMT_FB_BASE+'/'+key+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
-    .then(r=>r.json()).then(()=>{
-      if(s){s.textContent='Saved ✓';s.style.color='#1a7a4a';}
-      const meta=document.getElementById('exec-cmt-meta');
-      if(meta){const d=new Date(data._savedAt);meta.textContent='Last saved: '+d.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})+' · by '+data._savedBy;}
-      setTimeout(()=>{if(s)s.textContent='';},3000);
-    }).catch(()=>{if(s){s.textContent='Save failed';s.style.color='#c0392b';}});
-}
-
-function execCmtStartPolling(){
-  clearInterval(_excmtPollTimer);
-  _excmtPollTimer=setInterval(()=>{
-    const s=document.getElementById('exec-cmt-sync');
-    if(s&&s.textContent==='Unsaved changes…')return;
-    execCmtLoad();
-  },30000);
-}
 // ── END OVERTIME MONITORING MODULE ────────────────────────────────────
 </script>
 

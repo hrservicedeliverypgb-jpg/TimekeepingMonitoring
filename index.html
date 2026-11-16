@@ -2761,10 +2761,12 @@ async function otRenderExec(){
   // E. OT Flags
   const totOTFlagCount=affs.reduce((s,a)=>s+affMap[a].otFlagCount,0);
   const totOTFlagHours=round2(affs.reduce((s,a)=>s+affMap[a].otFlagHours,0));
+  const totOTAllHours=round2(affs.reduce((s,a)=>s+affMap[a].ot,0));
   const otFlagCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].otFlagCount>0?affMap[a].otFlagCount:'—';});
   const otFlagPctVals=affs.map(a=>{if(nd(a)||!affMap[a].otFlagCount||!affMap[a].emps)return'—';return fmtNum(round2((affMap[a].otFlagCount/affMap[a].emps)*100))+'%';});
   const totOTFlagPct=totEmpsAll>0&&totOTFlagCount>0?fmtNum(round2((totOTFlagCount/totEmpsAll)*100))+'%':'—';
   const otFlagHrsVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].otFlagHours>0?fmtNum(affMap[a].otFlagHours):'—';});
+  const otAllHrsVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].ot>0?fmtNum(affMap[a].ot):'—';});
   // F. Perfect Attendance
   const totPerfectCount=affs.reduce((s,a)=>s+affMap[a].perfectCount,0);
   const perfectCountVals=affs.map(a=>{if(nd(a))return'—';return affMap[a].perfectCount>0?affMap[a].perfectCount:'—';});
@@ -2847,7 +2849,7 @@ async function otRenderExec(){
         <tbody>
           ${mkRow('No. of Flagged Employees',otFlagCountVals,totOTFlagCount>0?totOTFlagCount:'—',totOTFlagCount>0)}
           ${mkRow('% vs Head Count',otFlagPctVals,totOTFlagPct,totOTFlagCount>0)}
-          ${mkRow('Total Flagged OT Hours',otFlagHrsVals,totOTFlagCount>0?fmtNum(totOTFlagHours):'—',totOTFlagCount>0)}
+          ${mkRow('Total OT Hours',otAllHrsVals,totOTAllHours>0?fmtNum(totOTAllHours):'—',totOTAllHours>0)}
         </tbody>
       </table></div>
     </div>
